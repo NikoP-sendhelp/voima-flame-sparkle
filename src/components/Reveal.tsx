@@ -13,7 +13,11 @@ export function Reveal({ children, delay = 0, y = 24, className, as = "div" }: P
   const reduced = useReducedMotion();
   const variants: Variants = {
     hidden: { opacity: 0, y: reduced ? 0 : y },
-    show: { opacity: 1, y: 0, transition: { duration: 1.1, delay, ease: [0.16, 1, 0.3, 1] } },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: reduced ? 0 : 0.8, delay: reduced ? 0 : delay, ease: [0.16, 1, 0.3, 1] },
+    },
   };
   const MotionTag = motion[as] as typeof motion.div;
   return (
@@ -21,10 +25,11 @@ export function Reveal({ children, delay = 0, y = 24, className, as = "div" }: P
       className={className}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0.05, margin: "0px 0px -10% 0px" }}
       variants={variants}
     >
       {children}
     </MotionTag>
   );
 }
+

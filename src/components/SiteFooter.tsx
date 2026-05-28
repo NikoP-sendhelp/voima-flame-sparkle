@@ -36,19 +36,19 @@ export function SiteFooter() {
             <span className="text-sand/40">Iltaisin klo 17 alkaen</span>
           </p>
         </div>
+
+        <div className="md:col-span-4">
+          <h4 className="mb-6 text-[10px] font-medium uppercase tracking-luxe text-sun">
+            Ota yhteyttä
+          </h4>
+          <ul className="space-y-4 text-sm text-sand/70">
             <li>
               <a
                 href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group inline-flex items-center gap-3 hover:text-sun"
+                className="group inline-flex flex-col gap-1 hover:text-sun"
               >
-                <span className="font-display text-xl">{contact.phone}</span>
-                <span className="text-[10px] uppercase tracking-luxe text-sand/40 group-hover:text-sun">
-                  WhatsApp
-                </span>
-              </a>
-            </li>
                 <span className="font-display text-xl">{contact.phone}</span>
                 <span className="text-[10px] uppercase tracking-luxe text-sand/40 group-hover:text-sun">
                   WhatsApp / Tekstiviesti
@@ -64,7 +64,7 @@ export function SiteFooter() {
               </a>
             </li>
           </ul>
-          <div className="mt-8 flex gap-4">
+          <div className="mt-8 flex gap-3">
             {["IG", "FB"].map((s) => (
               <span
                 key={s}

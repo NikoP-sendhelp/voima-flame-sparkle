@@ -116,14 +116,24 @@ function YhteysPage() {
             </div>
           </Reveal>
 
-          <Reveal as="div" className="bg-sand p-0 md:col-span-2">
+          <Reveal as="div" className="relative bg-mist md:col-span-2">
             <iframe
               title="Kartta — Radiokatu 22, Helsinki"
               src="https://www.google.com/maps?q=Radiokatu+22,+Helsinki&output=embed"
               loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
               className="h-80 w-full border-0 grayscale"
             />
+            <a
+              href="https://www.google.com/maps/dir/?api=1&destination=Radiokatu+22,+Helsinki"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute bottom-4 right-4 bg-driftwood px-5 py-2 text-[11px] uppercase tracking-luxe text-sand hover:bg-ember"
+            >
+              Avaa reittiohjeet →
+            </a>
           </Reveal>
+
         </div>
       </section>
     </div>

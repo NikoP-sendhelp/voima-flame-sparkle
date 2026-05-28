@@ -142,6 +142,32 @@
   }
 }
 
+@layer base {
+  /* Luettavuus: nosta haalistuneet brand-tekstit AA-tasolle */
+  [class*="text-driftwood/3"],
+  [class*="text-driftwood/4"],
+  [class*="text-driftwood/5"] {
+    color: oklch(0.38 0.022 50) !important;
+  }
+  [class*="text-driftwood/6"],
+  [class*="text-driftwood/7"] {
+    color: oklch(0.30 0.022 50) !important;
+  }
+  [class*="text-sand/4"],
+  [class*="text-sand/5"],
+  [class*="text-sand/6"] {
+    color: oklch(0.90 0.022 80) !important;
+  }
+  [class*="text-sand/7"],
+  [class*="text-sand/8"] {
+    color: oklch(0.96 0.022 80) !important;
+  }
+
+  /* Pienin uppercase micro-label luettavaksi */
+  .text-\[10px\] { font-size: 11px; }
+  .text-\[11px\] { font-size: 12px; }
+}
+
 
 @layer utilities {
   .font-display { font-family: var(--font-display); }

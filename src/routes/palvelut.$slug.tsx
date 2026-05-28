@@ -75,7 +75,7 @@ function ServicePage() {
           </p>
         </Reveal>
         <div className="mt-12 space-y-6 text-base leading-relaxed text-driftwood/75 md:text-lg">
-          {service.body.map((p, i) => (
+          {service.body.map((p: string, i: number) => (
             <Reveal key={i} delay={i * 0.1}>
               <p>{p}</p>
             </Reveal>

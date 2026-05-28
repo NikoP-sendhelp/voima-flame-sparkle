@@ -14,6 +14,7 @@ import { Route as PalvelutRouteImport } from './routes/palvelut'
 import { Route as NannaRouteImport } from './routes/nanna'
 import { Route as HinnastoRouteImport } from './routes/hinnasto'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PalvelutIndexRouteImport } from './routes/palvelut.index'
 import { Route as PalvelutSlugRouteImport } from './routes/palvelut.$slug'
 
 const YhteysRoute = YhteysRouteImport.update({
@@ -41,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PalvelutIndexRoute = PalvelutIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PalvelutRoute,
+} as any)
 const PalvelutSlugRoute = PalvelutSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -54,14 +60,15 @@ export interface FileRoutesByFullPath {
   '/palvelut': typeof PalvelutRouteWithChildren
   '/yhteys': typeof YhteysRoute
   '/palvelut/$slug': typeof PalvelutSlugRoute
+  '/palvelut/': typeof PalvelutIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/hinnasto': typeof HinnastoRoute
   '/nanna': typeof NannaRoute
-  '/palvelut': typeof PalvelutRouteWithChildren
   '/yhteys': typeof YhteysRoute
   '/palvelut/$slug': typeof PalvelutSlugRoute
+  '/palvelut': typeof PalvelutIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +78,7 @@ export interface FileRoutesById {
   '/palvelut': typeof PalvelutRouteWithChildren
   '/yhteys': typeof YhteysRoute
   '/palvelut/$slug': typeof PalvelutSlugRoute
+  '/palvelut/': typeof PalvelutIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,8 +89,9 @@ export interface FileRouteTypes {
     | '/palvelut'
     | '/yhteys'
     | '/palvelut/$slug'
+    | '/palvelut/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/hinnasto' | '/nanna' | '/palvelut' | '/yhteys' | '/palvelut/$slug'
+  to: '/' | '/hinnasto' | '/nanna' | '/yhteys' | '/palvelut/$slug' | '/palvelut'
   id:
     | '__root__'
     | '/'
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/palvelut'
     | '/yhteys'
     | '/palvelut/$slug'
+    | '/palvelut/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -138,6 +148,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/palvelut/': {
+      id: '/palvelut/'
+      path: '/'
+      fullPath: '/palvelut/'
+      preLoaderRoute: typeof PalvelutIndexRouteImport
+      parentRoute: typeof PalvelutRoute
+    }
     '/palvelut/$slug': {
       id: '/palvelut/$slug'
       path: '/$slug'
@@ -150,10 +167,12 @@ declare module '@tanstack/react-router' {
 
 interface PalvelutRouteChildren {
   PalvelutSlugRoute: typeof PalvelutSlugRoute
+  PalvelutIndexRoute: typeof PalvelutIndexRoute
 }
 
 const PalvelutRouteChildren: PalvelutRouteChildren = {
   PalvelutSlugRoute: PalvelutSlugRoute,
+  PalvelutIndexRoute: PalvelutIndexRoute,
 }
 
 const PalvelutRouteWithChildren = PalvelutRoute._addFileChildren(

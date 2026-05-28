@@ -35,5 +35,5 @@ export function Reveal({ children, delay = 0, y = 20, className, as = "div" }: P
       {children}
     </MotionTag>
   );
-
+}
 

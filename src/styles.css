@@ -163,9 +163,17 @@
     color: oklch(0.96 0.022 80) !important;
   }
 
-  /* Pienin uppercase micro-label luettavaksi */
-  .text-\[10px\] { font-size: 11px; }
-  .text-\[11px\] { font-size: 12px; }
+  /* Minimum readable text size: 30px across the whole site */
+  html { font-size: 30px; }
+  body { font-size: 30px; line-height: 1.5; }
+  .text-\[10px\],
+  .text-\[11px\],
+  .text-xs,
+  .text-sm,
+  .text-base {
+    font-size: 30px !important;
+    line-height: 1.45 !important;
+  }
 }
 
 

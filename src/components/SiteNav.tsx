@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { contact } from "@/lib/site-data";
 
@@ -13,6 +13,8 @@ const links = [
 export function SiteNav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -20,6 +22,23 @@ export function SiteNav() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // ESC sulkee, body lukkoon, fokus takaisin avauspainikkeeseen
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      openButtonRef.current?.focus();
+    };
+  }, [open]);
 
   return (
     <header
@@ -30,7 +49,7 @@ export function SiteNav() {
       }`}
     >
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 md:px-10">
-        <Link to="/" className="group flex items-baseline gap-2">
+        <Link to="/" className="group flex items-baseline gap-2" aria-label="Voima Lyhty — etusivu">
           <span className="font-display text-2xl italic tracking-tight text-driftwood">
             Voima Lyhty
           </span>
@@ -39,16 +58,16 @@ export function SiteNav() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-10 md:flex">
+        <nav aria-label="Päävalikko" className="hidden items-center gap-10 md:flex">
           {links.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               className="group relative text-[11px] font-medium uppercase tracking-luxe text-driftwood/80 transition-colors hover:text-ember"
-              activeProps={{ className: "text-ember" }}
+              activeProps={{ className: "text-ember", "aria-current": "page" }}
             >
               {l.label}
-              <span className="absolute -bottom-1 left-0 h-px w-0 bg-ember transition-all duration-500 group-hover:w-full" />
+              <span aria-hidden="true" className="absolute -bottom-1 left-0 h-px w-0 bg-ember transition-all duration-500 group-hover:w-full" />
             </Link>
           ))}
         </nav>
@@ -60,42 +79,61 @@ export function SiteNav() {
           className="hidden border border-driftwood px-6 py-2.5 text-[11px] font-medium uppercase tracking-luxe text-driftwood transition-all duration-500 hover:bg-driftwood hover:text-sand md:inline-block"
         >
           Varaa aika
+          <span className="sr-only"> WhatsAppilla</span>
         </a>
 
         <button
+          ref={openButtonRef}
           aria-label="Avaa valikko"
+          aria-expanded={open}
+          aria-controls="mobile-nav"
           onClick={() => setOpen(true)}
-          className="md:hidden text-driftwood"
+          className="md:hidden inline-flex min-h-11 min-w-11 items-center justify-center text-driftwood"
         >
-          <Menu size={22} />
+          <Menu size={22} aria-hidden="true" />
         </button>
       </div>
 
       {/* Mobile drawer */}
       <div
+        id="mobile-nav"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Sivuston valikko"
+        aria-hidden={!open}
         className={`fixed inset-0 z-50 bg-sand transition-opacity duration-500 md:hidden ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
         <div className="flex h-20 items-center justify-between px-6">
           <span className="font-display text-2xl italic">Voima Lyhty</span>
-          <button aria-label="Sulje" onClick={() => setOpen(false)}>
-            <X size={22} />
+          <button
+            ref={closeButtonRef}
+            aria-label="Sulje valikko"
+            onClick={() => setOpen(false)}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center"
+          >
+            <X size={22} aria-hidden="true" />
           </button>
         </div>
-        <nav className="flex flex-col items-center justify-center gap-8 pt-16">
+        <nav aria-label="Mobiilivalikko" className="flex flex-col items-center justify-center gap-8 pt-16">
           {links.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               onClick={() => setOpen(false)}
+              tabIndex={open ? 0 : -1}
               className="font-display text-4xl italic text-driftwood"
+              activeProps={{ "aria-current": "page" }}
             >
               {l.label}
             </Link>
           ))}
           <a
             href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            tabIndex={open ? 0 : -1}
             className="mt-8 border border-driftwood px-8 py-3 text-xs uppercase tracking-luxe"
           >
             Varaa aika

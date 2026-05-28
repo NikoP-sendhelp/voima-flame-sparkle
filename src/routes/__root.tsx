@@ -109,14 +109,18 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
+      <a href="#main" className="skip-link">
+        Siirry sisältöön
+      </a>
       <SiteNav />
-      <main className="min-h-screen">
+      <main id="main" tabIndex={-1} className="min-h-dvh focus:outline-none">
         <Outlet />
       </main>
       <SiteFooter />
     </QueryClientProvider>
   );
 }
+
 
 // Reserved for future OG image use on routes that opt-in.
 export const defaultOgImage = ogImage;

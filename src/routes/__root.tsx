@@ -82,6 +82,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "fi_FI" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "Voima Lyhty — Sointu sisälläsi | Helsinki Pasila" },
+      { name: "twitter:title", content: "Voima Lyhty — Sointu sisälläsi | Helsinki Pasila" },
+      { name: "description", content: "A dynamic, animated website for Voimalyhty Innovations, showcasing their services with modern design and Finnish content." },
+      { property: "og:description", content: "A dynamic, animated website for Voimalyhty Innovations, showcasing their services with modern design and Finnish content." },
+      { name: "twitter:description", content: "A dynamic, animated website for Voimalyhty Innovations, showcasing their services with modern design and Finnish content." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5970c8a-bcc9-4c65-9535-0da19c34edf3/id-preview-7d31349b--2085e859-b047-4758-8b38-e3940a1f2f15.lovable.app-1780001457508.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5970c8a-bcc9-4c65-9535-0da19c34edf3/id-preview-7d31349b--2085e859-b047-4758-8b38-e3940a1f2f15.lovable.app-1780001457508.png" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
@@ -109,18 +116,14 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <a href="#main" className="skip-link">
-        Siirry sisältöön
-      </a>
       <SiteNav />
-      <main id="main" tabIndex={-1} className="min-h-dvh focus:outline-none">
+      <main className="min-h-screen">
         <Outlet />
       </main>
       <SiteFooter />
     </QueryClientProvider>
   );
 }
-
 
 // Reserved for future OG image use on routes that opt-in.
 export const defaultOgImage = ogImage;

@@ -9,38 +9,128 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as YhteysRouteImport } from './routes/yhteys'
+import { Route as PalvelutRouteImport } from './routes/palvelut'
+import { Route as NannaRouteImport } from './routes/nanna'
+import { Route as HinnastoRouteImport } from './routes/hinnasto'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PalvelutSlugRouteImport } from './routes/palvelut.$slug'
 
+const YhteysRoute = YhteysRouteImport.update({
+  id: '/yhteys',
+  path: '/yhteys',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PalvelutRoute = PalvelutRouteImport.update({
+  id: '/palvelut',
+  path: '/palvelut',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NannaRoute = NannaRouteImport.update({
+  id: '/nanna',
+  path: '/nanna',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HinnastoRoute = HinnastoRouteImport.update({
+  id: '/hinnasto',
+  path: '/hinnasto',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PalvelutSlugRoute = PalvelutSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => PalvelutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/hinnasto': typeof HinnastoRoute
+  '/nanna': typeof NannaRoute
+  '/palvelut': typeof PalvelutRouteWithChildren
+  '/yhteys': typeof YhteysRoute
+  '/palvelut/$slug': typeof PalvelutSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/hinnasto': typeof HinnastoRoute
+  '/nanna': typeof NannaRoute
+  '/palvelut': typeof PalvelutRouteWithChildren
+  '/yhteys': typeof YhteysRoute
+  '/palvelut/$slug': typeof PalvelutSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/hinnasto': typeof HinnastoRoute
+  '/nanna': typeof NannaRoute
+  '/palvelut': typeof PalvelutRouteWithChildren
+  '/yhteys': typeof YhteysRoute
+  '/palvelut/$slug': typeof PalvelutSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/hinnasto'
+    | '/nanna'
+    | '/palvelut'
+    | '/yhteys'
+    | '/palvelut/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/hinnasto' | '/nanna' | '/palvelut' | '/yhteys' | '/palvelut/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/hinnasto'
+    | '/nanna'
+    | '/palvelut'
+    | '/yhteys'
+    | '/palvelut/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HinnastoRoute: typeof HinnastoRoute
+  NannaRoute: typeof NannaRoute
+  PalvelutRoute: typeof PalvelutRouteWithChildren
+  YhteysRoute: typeof YhteysRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/yhteys': {
+      id: '/yhteys'
+      path: '/yhteys'
+      fullPath: '/yhteys'
+      preLoaderRoute: typeof YhteysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/palvelut': {
+      id: '/palvelut'
+      path: '/palvelut'
+      fullPath: '/palvelut'
+      preLoaderRoute: typeof PalvelutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nanna': {
+      id: '/nanna'
+      path: '/nanna'
+      fullPath: '/nanna'
+      preLoaderRoute: typeof NannaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hinnasto': {
+      id: '/hinnasto'
+      path: '/hinnasto'
+      fullPath: '/hinnasto'
+      preLoaderRoute: typeof HinnastoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +138,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/palvelut/$slug': {
+      id: '/palvelut/$slug'
+      path: '/$slug'
+      fullPath: '/palvelut/$slug'
+      preLoaderRoute: typeof PalvelutSlugRouteImport
+      parentRoute: typeof PalvelutRoute
+    }
   }
 }
 
+interface PalvelutRouteChildren {
+  PalvelutSlugRoute: typeof PalvelutSlugRoute
+}
+
+const PalvelutRouteChildren: PalvelutRouteChildren = {
+  PalvelutSlugRoute: PalvelutSlugRoute,
+}
+
+const PalvelutRouteWithChildren = PalvelutRoute._addFileChildren(
+  PalvelutRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HinnastoRoute: HinnastoRoute,
+  NannaRoute: NannaRoute,
+  PalvelutRoute: PalvelutRouteWithChildren,
+  YhteysRoute: YhteysRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

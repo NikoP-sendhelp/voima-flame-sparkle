@@ -269,7 +269,6 @@ function NannaBlock() {
               Tutustu Nannaan
             </Link>
           </div>
-          </div>
         </Reveal>
       </div>
     </section>

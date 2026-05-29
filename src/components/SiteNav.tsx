@@ -93,7 +93,6 @@ export function SiteNav() {
           <Menu size={22} aria-hidden="true" />
         </button>
       </div>
-      </div>
 
       {/* Mobile drawer */}
       <div

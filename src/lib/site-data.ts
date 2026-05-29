@@ -121,6 +121,7 @@ export const sointukylpyDates2026 = [
   { date: "Ke 8.4.", month: "Huhtikuu" },
   { date: "To 15.4.", month: "Huhtikuu" },
   { date: "Ke 29.4.", month: "Huhtikuu" },
+  { date: "Ke 29.6.", month: "Kesäkuu" },
 ];
 
 export const contact = {

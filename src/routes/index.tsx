@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
-import { useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import heroBowl from "@/assets/hero-bowl.jpg";
 import nannaPortrait from "@/assets/nanna-portrait.jpg";
 import ogImage from "@/assets/og-cover.jpg";
 import { services, sointukylpyDates2026, contact } from "@/lib/site-data";
 import { Reveal } from "@/components/Reveal";
 import { SoundWave } from "@/components/SoundWave";
+import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -271,7 +272,34 @@ function NannaBlock() {
   );
 }
 
+function parseSointukylpyDate(dateString: string) {
+  const match = dateString.match(/(\d+)\.(\d+)\./);
+  if (!match) return new Date();
+
+  const [, day, month] = match;
+  return new Date(2026, Number(month) - 1, Number(day));
+}
+
 function Schedule() {
+  const eventDates = useMemo(
+    () =>
+      sointukylpyDates2026.map((entry) => ({
+        ...entry,
+        dateObj: parseSointukylpyDate(entry.date),
+      })),
+    [],
+  );
+
+  const eventDateSet = useMemo(
+    () => new Set(eventDates.map((event) => event.dateObj.toDateString())),
+    [eventDates],
+  );
+
+  const [selectedDate, setSelectedDate] = useState<Date>(eventDates[0].dateObj);
+  const selectedEvent = eventDates.find(
+    (event) => event.dateObj.toDateString() === selectedDate.toDateString(),
+  );
+
   return (
     <section className="bg-sand py-32 md:py-40">
       <div className="mx-auto max-w-5xl px-6">
@@ -284,38 +312,62 @@ function Schedule() {
               Tulevat sointukylvyt
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-driftwood/65">
-              Kokoonnumme keskiviikkoiltaisin klo 18:30 Pasilan Urheilutalon
-              studiohuoneeseen. Olethan paikalla viimeistään klo 18:25.
-              Ilmoittautumiset Urheiluhallit Oy:n kautta.
+              Sointukylpyjen ajankohdat löytyvät suoraan kalenterista. Valitse
+              päivä nähdäksesi paikan, ajan ja varausohjeet.
             </p>
           </div>
         </Reveal>
         <Reveal delay={0.15}>
-          <ul className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {sointukylpyDates2026.map((d) => (
-              <li
-                key={d.date}
-                className="group flex items-center gap-5 rounded-3xl border border-driftwood/10 bg-mist/40 p-5 transition-all duration-500 hover:-translate-y-1 hover:border-ember/40 hover:bg-sand hover:shadow-xl"
+          <div className="mt-16 grid gap-10 xl:grid-cols-[1.4fr_1fr]">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              fromDate={eventDates[0].dateObj}
+              toDate={eventDates[eventDates.length - 1].dateObj}
+              modifiers={{ event: eventDates.map((event) => event.dateObj) }}
+              modifiersClassNames={{
+                event: "bg-ember text-sand font-semibold",
+                selected: "ring-2 ring-ember",
+              }}
+              disabled={(day) => !eventDateSet.has(day.toDateString())}
+              className="max-w-[28rem]"
+            />
+
+            <div className="rounded-3xl border border-driftwood/10 bg-mist/40 p-8 text-driftwood shadow-sm">
+              <span className="text-[10px] uppercase tracking-luxe text-ember">
+                Valittu päivä
+              </span>
+              <h3 className="mt-4 font-display text-3xl italic text-driftwood">
+                {selectedEvent ? selectedEvent.date : "Valitse päivämäärä kalenterista"}
+              </h3>
+              <p className="mt-4 text-sm leading-relaxed text-driftwood/70">
+                {selectedEvent
+                  ? "Kokoonnumme klo 18:30 Pasilan Urheilutalon studiohuoneeseen. Olethan paikalla viimeistään klo 18:25."
+                  : "Klikkaa merkittyä päivää nähdäksesi lisätiedot."}
+              </p>
+              <div className="mt-6 space-y-3 text-sm text-driftwood/75">
+                <p className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-ember" />
+                  Sointukylpy 25 €
+                </p>
+                <p className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-ember" />
+                  Keskiviikkoiltaisin klo 18:30
+                </p>
+                <p className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-ember" />
+                  Pasilan Urheilutalo, Radiokatu 22
+                </p>
+              </div>
+              <Link
+                to="/yhteys"
+                className="mt-10 inline-flex rounded-full border border-driftwood/30 bg-sand px-7 py-3 text-[11px] uppercase tracking-luxe text-driftwood transition hover:border-ember hover:bg-ember hover:text-sand"
               >
-                <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-ember text-sand transition-colors group-hover:bg-driftwood">
-                  <span className="font-display text-3xl italic leading-none">
-                    {d.date}
-                  </span>
-                  <span className="mt-1 text-[9px] uppercase tracking-luxe text-sun">
-                    {d.month}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-display text-xl italic text-driftwood">
-                    Sointukylpy
-                  </span>
-                  <span className="mt-1 text-[11px] uppercase tracking-luxe text-driftwood/55">
-                    klo 18:30 · Pasila
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+                Varaa paikka →
+              </Link>
+            </div>
+          </div>
         </Reveal>
       </div>
     </section>

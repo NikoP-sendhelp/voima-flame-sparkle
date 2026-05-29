@@ -50,10 +50,10 @@ export function SiteNav() {
     >
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 md:px-10">
         <Link to="/" className="group flex items-baseline gap-2" aria-label="Voima Lyhty — etusivu">
-          <span className="font-display text-2xl italic tracking-tight text-driftwood">
+          <span className={`font-display text-2xl italic tracking-tight transition-colors ${scrolled ? "text-driftwood" : "text-sand drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"}`}>
             Voima Lyhty
           </span>
-          <span className="hidden text-[10px] tracking-luxe uppercase text-ember/80 md:inline">
+          <span className={`hidden text-[10px] tracking-luxe uppercase md:inline transition-colors ${scrolled ? "text-ember/80" : "text-sun drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"}`}>
             Helsinki
           </span>
         </Link>
@@ -63,7 +63,7 @@ export function SiteNav() {
             <Link
               key={l.to}
               to={l.to}
-              className="group relative text-[11px] font-medium uppercase tracking-luxe text-driftwood/80 transition-colors hover:text-ember"
+              className={`group relative text-[11px] font-medium uppercase tracking-luxe transition-colors hover:text-ember ${scrolled ? "text-driftwood/80" : "text-sand drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"}`}
               activeProps={{ className: "text-ember", "aria-current": "page" }}
             >
               {l.label}
@@ -76,7 +76,7 @@ export function SiteNav() {
           href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden border border-driftwood px-6 py-2.5 text-[11px] font-medium uppercase tracking-luxe text-driftwood transition-all duration-500 hover:bg-driftwood hover:text-sand md:inline-block"
+          className={`hidden border px-6 py-2.5 text-[11px] font-medium uppercase tracking-luxe transition-all duration-500 md:inline-block ${scrolled ? "border-driftwood text-driftwood hover:bg-driftwood hover:text-sand" : "border-sand text-sand hover:bg-sand hover:text-driftwood drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]"}`}
         >
           Varaa aika
           <span className="sr-only"> WhatsAppilla</span>
@@ -88,7 +88,7 @@ export function SiteNav() {
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen(true)}
-          className="md:hidden inline-flex min-h-11 min-w-11 items-center justify-center text-driftwood"
+          className={`md:hidden inline-flex min-h-11 min-w-11 items-center justify-center ${scrolled ? "text-driftwood" : "text-sand drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"}`}
         >
           <Menu size={22} aria-hidden="true" />
         </button>

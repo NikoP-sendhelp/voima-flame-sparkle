@@ -107,13 +107,13 @@ function Hero() {
         >
           <Link
             to="/palvelut"
-            className="group bg-sun px-10 py-4 text-[11px] font-semibold uppercase tracking-luxe text-driftwood transition-all duration-500 hover:bg-sand"
+            className="group rounded-full bg-sun px-10 py-4 text-[11px] font-semibold uppercase tracking-luxe text-driftwood shadow-lg shadow-sun/20 transition-all duration-500 hover:bg-sand hover:shadow-xl"
           >
             Tutustu hoitoihin
           </Link>
           <Link
             to="/yhteys"
-            className="text-[11px] uppercase tracking-luxe text-sand/80 underline-offset-8 hover:text-sun hover:underline"
+            className="rounded-full px-6 py-3 text-[11px] uppercase tracking-luxe text-sand/90 underline-offset-8 hover:text-sun hover:underline"
           >
             Varaa aika →
           </Link>
@@ -186,7 +186,7 @@ function ServicesPreview() {
                 params={{ slug: s.slug }}
                 className="group block"
               >
-                <div className="overflow-hidden">
+                <div className="overflow-hidden rounded-3xl">
                   <img
                     src={s.image}
                     alt={s.name}
@@ -232,9 +232,9 @@ function NannaBlock() {
               loading="lazy"
               width={1024}
               height={1280}
-              className="aspect-[4/5] w-full object-cover"
+              className="aspect-[4/5] w-full rounded-3xl object-cover"
             />
-            <div className="absolute -bottom-6 -right-6 hidden max-w-[14rem] bg-sun p-6 text-driftwood md:block">
+            <div className="absolute -bottom-6 -right-6 hidden max-w-[14rem] rounded-3xl bg-sun p-6 text-driftwood shadow-xl md:block">
               <p className="font-display text-lg italic leading-snug">
                 ”Kohtaan jokaisen asiakkaan lämmöllä ja läsnäololla.”
               </p>
@@ -264,7 +264,7 @@ function NannaBlock() {
             </div>
             <Link
               to="/nanna"
-              className="mt-10 inline-block border border-sun px-8 py-3 text-[11px] uppercase tracking-luxe text-sun transition hover:bg-sun hover:text-driftwood"
+              className="mt-10 inline-block rounded-full border border-sun px-8 py-3 text-[11px] uppercase tracking-luxe text-sun transition hover:bg-sun hover:text-driftwood"
             >
               Tutustu Nannaan
             </Link>
@@ -294,25 +294,29 @@ function Schedule() {
             </p>
           </div>
         </Reveal>
-
         <Reveal delay={0.15}>
-          <ul className="mt-16 divide-y divide-driftwood/10 border-y border-driftwood/10">
+          <ul className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {sointukylpyDates2026.map((d) => (
               <li
                 key={d.date}
-                className="group flex items-center justify-between gap-6 py-5 transition-colors hover:bg-mist/60"
+                className="group flex items-center gap-5 rounded-3xl border border-driftwood/10 bg-mist/40 p-5 transition-all duration-500 hover:-translate-y-1 hover:border-ember/40 hover:bg-sand hover:shadow-xl"
               >
-                <div className="flex items-baseline gap-6">
-                  <span className="font-display text-2xl italic text-ember md:text-3xl">
+                <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-ember text-sand transition-colors group-hover:bg-driftwood">
+                  <span className="font-display text-3xl italic leading-none">
                     {d.date}
                   </span>
-                  <span className="text-[10px] uppercase tracking-luxe text-driftwood/40">
+                  <span className="mt-1 text-[9px] uppercase tracking-luxe text-sun">
                     {d.month}
                   </span>
                 </div>
-                <span className="font-display text-lg italic text-driftwood/70">
-                  klo 18:30 — Pasila
-                </span>
+                <div className="flex flex-col">
+                  <span className="font-display text-xl italic text-driftwood">
+                    Sointukylpy
+                  </span>
+                  <span className="mt-1 text-[11px] uppercase tracking-luxe text-driftwood/55">
+                    klo 18:30 · Pasila
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
@@ -327,7 +331,7 @@ function PricingTease() {
     <section className="bg-mist py-32">
       <div className="mx-auto grid max-w-6xl gap-6 px-6 md:grid-cols-2 md:px-10">
         <Reveal>
-          <div className="flex h-full flex-col justify-between bg-sand p-10 md:p-14">
+          <div className="flex h-full flex-col justify-between rounded-3xl bg-sand p-10 shadow-sm md:p-14">
             <div>
               <span className="text-[10px] uppercase tracking-luxe text-ember">
                 Hinnasto
@@ -342,14 +346,14 @@ function PricingTease() {
             </div>
             <Link
               to="/hinnasto"
-              className="mt-10 self-start border-b border-driftwood pb-1 text-[11px] uppercase tracking-luxe text-driftwood hover:text-ember hover:border-ember"
+              className="mt-10 self-start rounded-full border border-driftwood/30 px-6 py-2.5 text-[11px] uppercase tracking-luxe text-driftwood transition hover:border-ember hover:bg-driftwood hover:text-sand"
             >
               Koko hinnasto →
             </Link>
           </div>
         </Reveal>
         <Reveal delay={0.1}>
-          <div className="flex h-full flex-col justify-between bg-ember p-10 text-sand md:p-14">
+          <div className="flex h-full flex-col justify-between rounded-3xl bg-ember p-10 text-sand shadow-sm md:p-14">
             <div>
               <span className="text-[10px] uppercase tracking-luxe text-sand/70">
                 Lahjaksi rauhaa
@@ -364,7 +368,7 @@ function PricingTease() {
             </div>
             <a
               href={`mailto:${contact.email}?subject=Lahjakortti`}
-              className="mt-10 self-start border-b border-sand pb-1 text-[11px] uppercase tracking-luxe hover:text-sun hover:border-sun"
+              className="mt-10 self-start rounded-full border border-sand/40 px-6 py-2.5 text-[11px] uppercase tracking-luxe text-sand transition hover:bg-sand hover:text-ember"
             >
               Tilaa lahjakortti →
             </a>

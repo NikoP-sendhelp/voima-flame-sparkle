@@ -76,7 +76,7 @@ export function SiteNav() {
           href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`}
           target="_blank"
           rel="noopener noreferrer"
-          className={`hidden border px-6 py-2.5 text-[11px] font-medium uppercase tracking-luxe transition-all duration-500 md:inline-block ${scrolled ? "border-driftwood text-driftwood hover:bg-driftwood hover:text-sand" : "border-sand text-sand hover:bg-sand hover:text-driftwood drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]"}`}
+          className={`hidden rounded-full border px-6 py-2.5 text-[11px] font-medium uppercase tracking-luxe transition-all duration-500 md:inline-block ${scrolled ? "border-driftwood text-driftwood hover:bg-driftwood hover:text-sand" : "border-sand text-sand hover:bg-sand hover:text-driftwood drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]"}`}
         >
           Varaa aika
           <span className="sr-only"> WhatsAppilla</span>

@@ -107,13 +107,13 @@ function Hero() {
         >
           <Link
             to="/palvelut"
-            className="group bg-sun px-10 py-4 text-[11px] font-semibold uppercase tracking-luxe text-driftwood transition-all duration-500 hover:bg-sand"
+            className="group rounded-full bg-sun px-10 py-4 text-[11px] font-semibold uppercase tracking-luxe text-driftwood shadow-lg shadow-sun/20 transition-all duration-500 hover:bg-sand hover:shadow-xl"
           >
             Tutustu hoitoihin
           </Link>
           <Link
             to="/yhteys"
-            className="text-[11px] uppercase tracking-luxe text-sand/80 underline-offset-8 hover:text-sun hover:underline"
+            className="rounded-full px-6 py-3 text-[11px] uppercase tracking-luxe text-sand/90 underline-offset-8 hover:text-sun hover:underline"
           >
             Varaa aika →
           </Link>
@@ -186,7 +186,7 @@ function ServicesPreview() {
                 params={{ slug: s.slug }}
                 className="group block"
               >
-                <div className="overflow-hidden">
+                <div className="overflow-hidden rounded-3xl">
                   <img
                     src={s.image}
                     alt={s.name}
@@ -232,9 +232,9 @@ function NannaBlock() {
               loading="lazy"
               width={1024}
               height={1280}
-              className="aspect-[4/5] w-full object-cover"
+              className="aspect-[4/5] w-full rounded-3xl object-cover"
             />
-            <div className="absolute -bottom-6 -right-6 hidden max-w-[14rem] bg-sun p-6 text-driftwood md:block">
+            <div className="absolute -bottom-6 -right-6 hidden max-w-[14rem] rounded-3xl bg-sun p-6 text-driftwood shadow-xl md:block">
               <p className="font-display text-lg italic leading-snug">
                 ”Kohtaan jokaisen asiakkaan lämmöllä ja läsnäololla.”
               </p>
@@ -264,10 +264,11 @@ function NannaBlock() {
             </div>
             <Link
               to="/nanna"
-              className="mt-10 inline-block border border-sun px-8 py-3 text-[11px] uppercase tracking-luxe text-sun transition hover:bg-sun hover:text-driftwood"
+              className="mt-10 inline-block rounded-full border border-sun px-8 py-3 text-[11px] uppercase tracking-luxe text-sun transition hover:bg-sun hover:text-driftwood"
             >
               Tutustu Nannaan
             </Link>
+          </div>
           </div>
         </Reveal>
       </div>

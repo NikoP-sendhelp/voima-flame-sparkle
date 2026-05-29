@@ -331,7 +331,6 @@ function PricingTease() {
     <section className="bg-mist py-32">
       <div className="mx-auto grid max-w-6xl gap-6 px-6 md:grid-cols-2 md:px-10">
         <Reveal>
-        <Reveal>
           <div className="flex h-full flex-col justify-between rounded-3xl bg-sand p-10 shadow-sm md:p-14">
             <div>
               <span className="text-[10px] uppercase tracking-luxe text-ember">

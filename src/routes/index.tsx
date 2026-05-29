@@ -294,25 +294,29 @@ function Schedule() {
             </p>
           </div>
         </Reveal>
-
         <Reveal delay={0.15}>
-          <ul className="mt-16 divide-y divide-driftwood/10 border-y border-driftwood/10">
+          <ul className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {sointukylpyDates2026.map((d) => (
               <li
                 key={d.date}
-                className="group flex items-center justify-between gap-6 py-5 transition-colors hover:bg-mist/60"
+                className="group flex items-center gap-5 rounded-3xl border border-driftwood/10 bg-mist/40 p-5 transition-all duration-500 hover:-translate-y-1 hover:border-ember/40 hover:bg-sand hover:shadow-xl"
               >
-                <div className="flex items-baseline gap-6">
-                  <span className="font-display text-2xl italic text-ember md:text-3xl">
+                <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-ember text-sand transition-colors group-hover:bg-driftwood">
+                  <span className="font-display text-3xl italic leading-none">
                     {d.date}
                   </span>
-                  <span className="text-[10px] uppercase tracking-luxe text-driftwood/40">
+                  <span className="mt-1 text-[9px] uppercase tracking-luxe text-sun">
                     {d.month}
                   </span>
                 </div>
-                <span className="font-display text-lg italic text-driftwood/70">
-                  klo 18:30 — Pasila
-                </span>
+                <div className="flex flex-col">
+                  <span className="font-display text-xl italic text-driftwood">
+                    Sointukylpy
+                  </span>
+                  <span className="mt-1 text-[11px] uppercase tracking-luxe text-driftwood/55">
+                    klo 18:30 · Pasila
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
@@ -327,7 +331,8 @@ function PricingTease() {
     <section className="bg-mist py-32">
       <div className="mx-auto grid max-w-6xl gap-6 px-6 md:grid-cols-2 md:px-10">
         <Reveal>
-          <div className="flex h-full flex-col justify-between bg-sand p-10 md:p-14">
+        <Reveal>
+          <div className="flex h-full flex-col justify-between rounded-3xl bg-sand p-10 shadow-sm md:p-14">
             <div>
               <span className="text-[10px] uppercase tracking-luxe text-ember">
                 Hinnasto
@@ -342,14 +347,14 @@ function PricingTease() {
             </div>
             <Link
               to="/hinnasto"
-              className="mt-10 self-start border-b border-driftwood pb-1 text-[11px] uppercase tracking-luxe text-driftwood hover:text-ember hover:border-ember"
+              className="mt-10 self-start rounded-full border border-driftwood/30 px-6 py-2.5 text-[11px] uppercase tracking-luxe text-driftwood transition hover:border-ember hover:bg-driftwood hover:text-sand"
             >
               Koko hinnasto →
             </Link>
           </div>
         </Reveal>
         <Reveal delay={0.1}>
-          <div className="flex h-full flex-col justify-between bg-ember p-10 text-sand md:p-14">
+          <div className="flex h-full flex-col justify-between rounded-3xl bg-ember p-10 text-sand shadow-sm md:p-14">
             <div>
               <span className="text-[10px] uppercase tracking-luxe text-sand/70">
                 Lahjaksi rauhaa
@@ -364,7 +369,7 @@ function PricingTease() {
             </div>
             <a
               href={`mailto:${contact.email}?subject=Lahjakortti`}
-              className="mt-10 self-start border-b border-sand pb-1 text-[11px] uppercase tracking-luxe hover:text-sun hover:border-sun"
+              className="mt-10 self-start rounded-full border border-sand/40 px-6 py-2.5 text-[11px] uppercase tracking-luxe text-sand transition hover:bg-sand hover:text-ember"
             >
               Tilaa lahjakortti →
             </a>

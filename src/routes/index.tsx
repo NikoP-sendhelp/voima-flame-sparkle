@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
-import heroVideo from "@/assets/hero-bg.webm";
+import heroBowl from "@/assets/hero-bowl.jpg";
 import nannaPortrait from "@/assets/nanna-portrait.jpg";
 import ogImage from "@/assets/og-cover.jpg";
 import { services, sointukylpyDates2026, contact } from "@/lib/site-data";
@@ -54,13 +54,9 @@ function Hero() {
   return (
     <section ref={ref} className="relative h-[100svh] w-full overflow-hidden">
       <motion.div style={{ y }} className="absolute inset-0">
-        <video
-          src={heroVideo}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
+        <img
+          src={heroBowl}
+          alt=""
           className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-driftwood/30 via-driftwood/10 to-driftwood/60" />

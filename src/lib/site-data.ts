@@ -110,18 +110,18 @@ export const services: Service[] = [
   },
 ];
 
-export const sointukylpyDates2026 = [
-  { date: "Ke 21.1.", month: "Tammikuu" },
-  { date: "Ke 28.1.", month: "Tammikuu" },
-  { date: "Ke 18.2.", month: "Helmikuu" },
-  { date: "Ke 25.2.", month: "Helmikuu" },
-  { date: "Ke 4.3.", month: "Maaliskuu" },
-  { date: "Ke 25.3.", month: "Maaliskuu" },
-  { date: "Ke 1.4.", month: "Huhtikuu" },
-  { date: "Ke 8.4.", month: "Huhtikuu" },
-  { date: "To 15.4.", month: "Huhtikuu" },
-  { date: "Ke 29.4.", month: "Huhtikuu" },
-  { date: "Ke 29.6.", month: "Kesäkuu" },
+export const sointukylpyDates: { year: number; month: number; day: number }[] = [
+  { year: 2026, month: 1, day: 21 },
+  { year: 2026, month: 1, day: 28 },
+  { year: 2026, month: 2, day: 18 },
+  { year: 2026, month: 2, day: 25 },
+  { year: 2026, month: 3, day: 4 },
+  { year: 2026, month: 3, day: 25 },
+  { year: 2026, month: 4, day: 1 },
+  { year: 2026, month: 4, day: 8 },
+  { year: 2026, month: 4, day: 15 },
+  { year: 2026, month: 4, day: 29 },
+  { year: 2026, month: 6, day: 29 },
 ];
 
 export const contact = {

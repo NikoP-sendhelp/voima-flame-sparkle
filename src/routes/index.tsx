@@ -4,10 +4,10 @@ import { useMemo, useRef, useState } from "react";
 import heroBowl from "@/assets/hero-bowl.jpg";
 import nannaPortrait from "@/assets/nanna-portrait.jpg";
 import ogImage from "@/assets/og-cover.jpg";
-import { services, sointukylpyDates2026, contact } from "@/lib/site-data";
+import { services, sointukylpyDates, contact } from "@/lib/site-data";
 import { Reveal } from "@/components/Reveal";
 import { SoundWave } from "@/components/SoundWave";
-import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -272,33 +272,73 @@ function NannaBlock() {
   );
 }
 
-function parseSointukylpyDate(dateString: string) {
-  const match = dateString.match(/(\d+)\.(\d+)\./);
-  if (!match) return new Date();
+const MONTH_NAMES_FI = [
+  "", "Tammikuu", "Helmikuu", "Maaliskuu", "Huhtikuu",
+  "Toukokuu", "Kesäkuu", "Heinäkuu", "Elokuu",
+  "Syyskuu", "Lokakuu", "Marraskuu", "Joulukuu",
+];
+const MONTH_NAMES_GENITIVE = [
+  "", "tammikuuta", "helmikuuta", "maaliskuuta", "huhtikuuta",
+  "toukokuuta", "kesäkuuta", "heinäkuuta", "elokuuta",
+  "syyskuuta", "lokakuuta", "marraskuuta", "joulukuuta",
+];
+const WEEKDAY_NAMES = ["Sunnuntai", "Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai", "Lauantai"];
+const WEEKDAYS_SHORT = ["Ma", "Ti", "Ke", "To", "Pe", "La", "Su"];
 
-  const [, day, month] = match;
-  return new Date(2026, Number(month) - 1, Number(day));
-}
+type SointukylpyDate = { year: number; month: number; day: number };
 
 function Schedule() {
-  const eventDates = useMemo(
-    () =>
-      sointukylpyDates2026.map((entry) => ({
-        ...entry,
-        dateObj: parseSointukylpyDate(entry.date),
-      })),
+  const dates = sointukylpyDates;
+
+  const [viewYear, setViewYear] = useState(() => {
+    const today = new Date();
+    const upcoming = dates.find((d) => new Date(d.year, d.month - 1, d.day) >= today);
+    return (upcoming ?? dates[dates.length - 1]).year;
+  });
+  const [viewMonth, setViewMonth] = useState(() => {
+    const today = new Date();
+    const upcoming = dates.find((d) => new Date(d.year, d.month - 1, d.day) >= today);
+    return (upcoming ?? dates[dates.length - 1]).month;
+  });
+  const [selected, setSelected] = useState<SointukylpyDate | null>(null);
+
+  const eventSet = useMemo(
+    () => new Set(dates.map((d) => `${d.year}-${d.month}-${d.day}`)),
     [],
   );
 
-  const eventDateSet = useMemo(
-    () => new Set(eventDates.map((event) => event.dateObj.toDateString())),
-    [eventDates],
-  );
+  const minYear = Math.min(...dates.map((d) => d.year));
+  const maxYear = Math.max(...dates.map((d) => d.year));
+  const years = [...new Set(dates.map((d) => d.year))].sort();
+  const yearLabel = years.length === 1 ? String(years[0]) : `${years[0]}–${years[years.length - 1]}`;
 
-  const [selectedDate, setSelectedDate] = useState<Date>(eventDates[0].dateObj);
-  const selectedEvent = eventDates.find(
-    (event) => event.dateObj.toDateString() === selectedDate.toDateString(),
-  );
+  const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
+  const firstDayOfWeek = (new Date(viewYear, viewMonth - 1, 1).getDay() + 6) % 7;
+  const cells: (number | null)[] = [
+    ...Array<null>(firstDayOfWeek).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  function prevMonth() {
+    if (viewMonth === 1) {
+      if (viewYear <= minYear) return;
+      setViewMonth(12);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  }
+
+  function nextMonth() {
+    if (viewMonth === 12) {
+      if (viewYear >= maxYear) return;
+      setViewMonth(1);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  }
 
   return (
     <section className="bg-sand py-32 md:py-40">
@@ -306,66 +346,136 @@ function Schedule() {
         <Reveal>
           <div className="text-center">
             <span className="text-[10px] uppercase tracking-luxe text-ember">
-              Kevät 2026
+              {yearLabel}
             </span>
             <h2 className="mt-4 font-display text-4xl italic text-driftwood md:text-6xl">
               Tulevat sointukylvyt
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-driftwood/65">
-              Sointukylpyjen ajankohdat löytyvät suoraan kalenterista. Valitse
-              päivä nähdäksesi paikan, ajan ja varausohjeet.
+              Kokoonnumme Pasilan Urheilutalon studiohuoneeseen. Olethan paikalla
+              viimeistään klo 18:25. Ilmoittautumiset Urheiluhallit Oy:n kautta.
             </p>
           </div>
         </Reveal>
-        <Reveal delay={0.15}>
-          <div className="mt-16 grid gap-10 xl:grid-cols-[1.4fr_1fr]">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              fromDate={eventDates[0].dateObj}
-              toDate={eventDates[eventDates.length - 1].dateObj}
-              modifiers={{ event: eventDates.map((event) => event.dateObj) }}
-              modifiersClassNames={{
-                event: "bg-ember text-sand font-semibold",
-                selected: "ring-2 ring-ember",
-              }}
-              disabled={(day) => !eventDateSet.has(day.toDateString())}
-              className="max-w-[28rem]"
-            />
 
-            <div className="rounded-3xl border border-driftwood/10 bg-mist/40 p-8 text-driftwood shadow-sm">
-              <span className="text-[10px] uppercase tracking-luxe text-ember">
-                Valittu päivä
-              </span>
-              <h3 className="mt-4 font-display text-3xl italic text-driftwood">
-                {selectedEvent ? selectedEvent.date : "Valitse päivämäärä kalenterista"}
-              </h3>
-              <p className="mt-4 text-sm leading-relaxed text-driftwood/70">
-                {selectedEvent
-                  ? "Kokoonnumme klo 18:30 Pasilan Urheilutalon studiohuoneeseen. Olethan paikalla viimeistään klo 18:25."
-                  : "Klikkaa merkittyä päivää nähdäksesi lisätiedot."}
-              </p>
-              <div className="mt-6 space-y-3 text-sm text-driftwood/75">
-                <p className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-ember" />
-                  Sointukylpy 25 €
-                </p>
-                <p className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-ember" />
-                  Keskiviikkoiltaisin klo 18:30
-                </p>
-                <p className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-ember" />
-                  Pasilan Urheilutalo, Radiokatu 22
-                </p>
+        <Reveal delay={0.15}>
+          <div className="mt-16 grid gap-8 lg:grid-cols-[1fr_300px]">
+            {/* Kalenteri */}
+            <div className="rounded-3xl bg-mist/60 p-6 md:p-8">
+              <div className="mb-8 flex items-center justify-between">
+                <button
+                  onClick={prevMonth}
+                  disabled={viewMonth === 1 && viewYear <= minYear}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-lg text-driftwood/50 transition hover:bg-driftwood/10 hover:text-driftwood disabled:opacity-20"
+                >
+                  ←
+                </button>
+                <span className="font-display text-2xl italic text-driftwood">
+                  {MONTH_NAMES_FI[viewMonth]} {viewYear}
+                </span>
+                <button
+                  onClick={nextMonth}
+                  disabled={viewMonth === 12 && viewYear >= maxYear}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-lg text-driftwood/50 transition hover:bg-driftwood/10 hover:text-driftwood disabled:opacity-20"
+                >
+                  →
+                </button>
               </div>
-              <Link
-                to="/yhteys"
-                className="mt-10 inline-flex rounded-full border border-driftwood/30 bg-sand px-7 py-3 text-[11px] uppercase tracking-luxe text-driftwood transition hover:border-ember hover:bg-ember hover:text-sand"
-              >
-                Varaa paikka →
-              </Link>
+
+              <div className="mb-3 grid grid-cols-7">
+                {WEEKDAYS_SHORT.map((d) => (
+                  <span
+                    key={d}
+                    className="text-center text-[10px] uppercase tracking-luxe text-driftwood/40"
+                  >
+                    {d}
+                  </span>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {cells.map((day, i) => {
+                  const key = day ? `${viewYear}-${viewMonth}-${day}` : null;
+                  const isEvent = !!key && eventSet.has(key);
+                  const isSelected =
+                    selected?.year === viewYear &&
+                    selected?.month === viewMonth &&
+                    selected?.day === day;
+                  return (
+                    <button
+                      key={i}
+                      disabled={!isEvent}
+                      onClick={() =>
+                        isEvent &&
+                        setSelected({ year: viewYear, month: viewMonth, day: day! })
+                      }
+                      className={cn(
+                        "mx-auto flex h-12 w-12 items-center justify-center rounded-2xl text-base transition-all duration-200",
+                        !day && "invisible pointer-events-none",
+                        isEvent && !isSelected &&
+                          "cursor-pointer bg-ember/15 font-semibold text-ember hover:bg-ember hover:text-sand",
+                        isEvent && isSelected &&
+                          "scale-110 bg-ember font-semibold text-sand shadow-lg shadow-ember/30",
+                        !isEvent && day && "cursor-default text-driftwood/30",
+                      )}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 flex items-center gap-2.5 border-t border-driftwood/10 pt-5">
+                <span className="h-3 w-3 rounded-full bg-ember/25 ring-1 ring-ember/50" />
+                <span className="text-[10px] uppercase tracking-luxe text-driftwood/50">
+                  Sointukylpy klo 18:30
+                </span>
+              </div>
+            </div>
+
+            {/* Sivupalkki */}
+            <div className="flex flex-col rounded-3xl border border-driftwood/10 bg-mist/40 p-7">
+              {selected ? (
+                <>
+                  <span className="text-[10px] uppercase tracking-luxe text-ember">
+                    Valittu päivä
+                  </span>
+                  <h3 className="mt-3 font-display text-2xl italic leading-snug text-driftwood">
+                    {WEEKDAY_NAMES[new Date(selected.year, selected.month - 1, selected.day).getDay()]}
+                    <br />
+                    {selected.day}. {MONTH_NAMES_GENITIVE[selected.month]} {selected.year}
+                  </h3>
+                  <div className="mt-6 space-y-3 text-sm text-driftwood/70">
+                    <p className="flex items-start gap-3">
+                      <span className="mt-1.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-ember" />
+                      Alkaa klo 18:30
+                    </p>
+                    <p className="flex items-start gap-3">
+                      <span className="mt-1.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-ember" />
+                      Pasilan Urheilutalo, Radiokatu 22
+                    </p>
+                    <p className="flex items-start gap-3">
+                      <span className="mt-1.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-ember" />
+                      Hinta 25 €
+                    </p>
+                  </div>
+                  <Link
+                    to="/yhteys"
+                    className="mt-auto inline-flex rounded-full bg-ember px-7 py-3 pt-8 text-[11px] font-semibold uppercase tracking-luxe text-sand shadow-sm shadow-ember/20 transition hover:bg-driftwood"
+                  >
+                    Varaa paikka →
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <span className="text-[10px] uppercase tracking-luxe text-driftwood/35">
+                    Valitse päivä
+                  </span>
+                  <p className="mt-4 font-display text-xl italic leading-snug text-driftwood/35">
+                    Klikkaa korostettua päivää nähdäksesi tiedot ja varauslinkin.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </Reveal>

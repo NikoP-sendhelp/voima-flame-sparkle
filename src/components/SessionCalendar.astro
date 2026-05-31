@@ -1,0 +1,358 @@
+---
+import { contact, services, type ServiceSlug, type SessionEvent } from "../lib/site-data";
+
+type Props = {
+  events: SessionEvent[];
+  serviceSlug?: ServiceSlug;
+  title?: string;
+  emptyMessage?: string;
+};
+
+const {
+  events,
+  serviceSlug,
+  title = serviceSlug ? "Tulevat ja menneet sessiot" : "Sessiokalenteri",
+  emptyMessage = "Ei aikataulutettuja sessioita juuri nyt. Uudet ajat lisätään tänne heti, kun ne varmistuvat.",
+} = Astro.props;
+
+const scopedEvents = serviceSlug
+  ? events.filter((event) => event.serviceSlug === serviceSlug)
+  : events;
+
+const serviceMeta = Object.fromEntries(
+  services.map((service, index) => [
+    service.slug,
+    {
+      name: service.name,
+      color: [
+        "#be5736",
+        "#d89245",
+        "#6f936b",
+        "#8d6a4f",
+        "#b96f76",
+        "#6c7f9d",
+      ][index],
+      url: `/palvelut/${service.slug}`,
+    },
+  ]),
+);
+
+const calendarId = `session-calendar-${serviceSlug ?? "all"}-${Math.random().toString(36).slice(2)}`;
+const calendarData = scopedEvents
+  .map((event) => ({
+    ...event,
+    serviceName: serviceMeta[event.serviceSlug]?.name ?? event.title,
+    serviceUrl: serviceMeta[event.serviceSlug]?.url ?? "/palvelut",
+    color: serviceMeta[event.serviceSlug]?.color ?? "#be5736",
+    bookingUrl:
+      event.bookingUrl ??
+      `https://wa.me/${contact.phoneIntl.replace("+", "")}?text=${encodeURIComponent(
+        `Hei! Haluaisin kysyä ajasta: ${event.title} ${event.date} klo ${event.startTime}.`,
+      )}`,
+  }))
+  .sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`));
+---
+
+<section
+  id={calendarId}
+  class="rounded-[1.75rem] border border-driftwood/10 bg-cream p-4 text-driftwood shadow-[0_1.5rem_4rem_oklch(0.176_0.026_58_/_0.08)] md:p-6"
+  data-session-calendar
+>
+  <div class="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <div>
+      <span class="eyebrow text-ember">{serviceSlug ? "Palvelun kalenteri" : "Kaikki palvelut"}</span>
+      <h2 class="mt-3 font-display text-4xl italic leading-tight text-driftwood md:text-5xl">
+        {title}
+      </h2>
+    </div>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="grid h-11 w-11 place-items-center rounded-full border border-driftwood/15 transition hover:bg-driftwood hover:text-sand"
+        data-calendar-prev
+        aria-label="Edellinen kuukausi"
+      >
+        <span aria-hidden="true">←</span>
+      </button>
+      <button
+        type="button"
+        class="grid h-11 w-11 place-items-center rounded-full border border-driftwood/15 transition hover:bg-driftwood hover:text-sand"
+        data-calendar-next
+        aria-label="Seuraava kuukausi"
+      >
+        <span aria-hidden="true">→</span>
+      </button>
+    </div>
+  </div>
+
+  {
+    calendarData.length > 0 ? (
+      <>
+        <div class="mt-6 flex flex-wrap gap-2" data-calendar-legend></div>
+
+        <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div class="rounded-[1.25rem] border border-driftwood/10 bg-sand/70 p-3 md:p-4">
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <h3 class="font-display text-3xl italic text-driftwood" data-calendar-heading></h3>
+              <span class="text-[0.68rem] font-semibold uppercase tracking-luxe text-driftwood/45">
+                Ma-Su
+              </span>
+            </div>
+            <div class="grid grid-cols-7 gap-1 text-center text-[0.65rem] font-semibold uppercase tracking-luxe text-driftwood/45">
+              {["Ma", "Ti", "Ke", "To", "Pe", "La", "Su"].map((day) => (
+                <div class="py-2">{day}</div>
+              ))}
+            </div>
+            <div class="mt-1 grid grid-cols-7 gap-1" data-calendar-grid></div>
+          </div>
+
+          <aside class="rounded-[1.25rem] bg-driftwood p-5 text-sand">
+            <span class="eyebrow text-sun">Valittu päivä</span>
+            <div class="mt-4 space-y-3" data-calendar-details></div>
+          </aside>
+        </div>
+
+        <div class="mt-6 grid gap-4 md:grid-cols-2" data-calendar-lists></div>
+      </>
+    ) : (
+      <div class="mt-6 rounded-[1.25rem] border border-driftwood/10 bg-sand/70 p-6">
+        <p class="font-display text-2xl italic text-driftwood">{emptyMessage}</p>
+        <a href="/yhteys" class="btn-secondary mt-6 border-driftwood/25 text-driftwood hover:bg-driftwood hover:text-sand">
+          Kysy seuraavaa aikaa
+        </a>
+      </div>
+    )
+  }
+
+  <script type="application/json" data-calendar-data set:html={JSON.stringify(calendarData)} />
+</section>
+
+<script>
+  const calendars = document.querySelectorAll<HTMLElement>("[data-session-calendar]");
+  const dateFormatter = new Intl.DateTimeFormat("fi-FI", {
+    weekday: "short",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  });
+  const monthFormatter = new Intl.DateTimeFormat("fi-FI", {
+    month: "long",
+    year: "numeric",
+  });
+
+  function toDate(date: string) {
+    const [year, month, day] = date.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  function todayKey() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  }
+
+  function setupCalendar(root: HTMLElement) {
+    if (root.dataset.calendarReady === "true") return;
+    root.dataset.calendarReady = "true";
+
+    const data = root.querySelector<HTMLScriptElement>("[data-calendar-data]");
+    const events = data ? JSON.parse(data.textContent || "[]") : [];
+    if (!events.length) return;
+
+    const grid = root.querySelector<HTMLElement>("[data-calendar-grid]");
+    const heading = root.querySelector<HTMLElement>("[data-calendar-heading]");
+    const details = root.querySelector<HTMLElement>("[data-calendar-details]");
+    const lists = root.querySelector<HTMLElement>("[data-calendar-lists]");
+    const legend = root.querySelector<HTMLElement>("[data-calendar-legend]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-calendar-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-calendar-next]");
+    if (!grid || !heading || !details || !lists || !legend || !prev || !next) return;
+
+    const today = todayKey();
+    const upcoming = events.find((event: any) => event.date >= today);
+    const firstDate = toDate(upcoming?.date ?? today);
+    let currentYear = firstDate.getFullYear();
+    let currentMonth = firstDate.getMonth();
+    let selectedDate = upcoming?.date ?? today;
+
+    const byDate = events.reduce((map: Map<string, any[]>, event: any) => {
+      const dayEvents = map.get(event.date) ?? [];
+      dayEvents.push(event);
+      map.set(event.date, dayEvents);
+      return map;
+    }, new Map());
+
+    function renderLegend() {
+      const seen = new Map();
+      events.forEach((event: any) => {
+        if (!seen.has(event.serviceSlug)) {
+          seen.set(event.serviceSlug, event);
+        }
+      });
+      legend.innerHTML = Array.from(seen.values())
+        .map(
+          (event: any) => `
+            <span class="inline-flex items-center gap-2 rounded-full border border-driftwood/10 bg-sand/70 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-luxe text-driftwood/62">
+              <span class="h-2.5 w-2.5 rounded-full" style="background:${event.color}"></span>
+              ${event.serviceName}
+            </span>
+          `,
+        )
+        .join("");
+    }
+
+    function renderDetails() {
+      const dayEvents = byDate.get(selectedDate) ?? [];
+      if (!dayEvents.length) {
+        details.innerHTML = `
+          <p class="text-sm leading-relaxed text-sand/70">
+            Tälle päivälle ei ole merkitty sessioita. Selaa kuukausia tai katso listat alta.
+          </p>
+        `;
+        return;
+      }
+
+      details.innerHTML = dayEvents
+        .map((event: any) => {
+          const isPast = event.date < today;
+          return `
+            <article class="rounded-2xl border border-sand/10 bg-sand/8 p-4 ${isPast ? "opacity-65" : ""}">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-[0.68rem] font-semibold uppercase tracking-luxe text-sun">${dateFormatter.format(toDate(event.date))}</p>
+                  <h4 class="mt-2 font-display text-2xl italic text-sand">${event.title}</h4>
+                </div>
+                <span class="rounded-full px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-luxe text-ink" style="background:${event.color}">
+                  ${event.serviceName}
+                </span>
+              </div>
+              <p class="mt-2 text-sm text-sand/72">${event.startTime}${event.endTime ? `-${event.endTime}` : ""} · ${event.location}</p>
+              <p class="mt-3 text-sm leading-relaxed text-sand/76">${event.summary}</p>
+              ${
+                isPast
+                  ? `<span class="mt-4 inline-block text-[0.68rem] font-semibold uppercase tracking-luxe text-sand/45">Mennyt sessio</span>`
+                  : `<a href="${event.bookingUrl}" class="btn-primary mt-4 w-full">Kysy paikkaa</a>`
+              }
+            </article>
+          `;
+        })
+        .join("");
+    }
+
+    function renderLists() {
+      const futureEvents = events.filter((event: any) => event.date >= today).slice(0, 6);
+      const pastEvents = events.filter((event: any) => event.date < today).slice(-6).reverse();
+      const renderList = (title: string, items: any[], muted = false) => `
+        <div class="rounded-[1.25rem] border border-driftwood/10 bg-sand/65 p-5">
+          <h3 class="eyebrow text-ember">${title}</h3>
+          <div class="mt-4 space-y-3">
+            ${
+              items.length
+                ? items
+                    .map(
+                      (event: any) => `
+                        <button type="button" class="block w-full rounded-2xl border border-driftwood/10 bg-cream p-4 text-left transition hover:-translate-y-1 hover:border-ember/30 ${muted ? "opacity-65" : ""}" data-calendar-select="${event.date}">
+                          <span class="text-[0.68rem] font-semibold uppercase tracking-luxe text-driftwood/45">${dateFormatter.format(toDate(event.date))} · ${event.startTime}</span>
+                          <span class="mt-1 block font-display text-xl italic text-driftwood">${event.title}</span>
+                          <span class="mt-1 block text-sm text-driftwood/62">${event.serviceName}</span>
+                        </button>
+                      `,
+                    )
+                    .join("")
+                : `<p class="text-sm leading-relaxed text-driftwood/62">Ei merkintöjä.</p>`
+            }
+          </div>
+        </div>
+      `;
+
+      lists.innerHTML = renderList("Tulevat", futureEvents) + renderList("Menneet", pastEvents, true);
+      lists.querySelectorAll<HTMLButtonElement>("[data-calendar-select]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const date = button.dataset.calendarSelect;
+          if (!date) return;
+          const parsed = toDate(date);
+          selectedDate = date;
+          currentYear = parsed.getFullYear();
+          currentMonth = parsed.getMonth();
+          render();
+          root.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+    }
+
+    function render() {
+      const first = new Date(currentYear, currentMonth, 1);
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const offset = (first.getDay() + 6) % 7;
+      heading.textContent = monthFormatter.format(first);
+
+      const cells = [];
+      for (let i = 0; i < offset; i += 1) {
+        cells.push(`<div class="min-h-20 rounded-2xl bg-transparent"></div>`);
+      }
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const date = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const dayEvents = byDate.get(date) ?? [];
+        const isSelected = selectedDate === date;
+        const isPast = date < today;
+        cells.push(`
+          <button
+            type="button"
+            class="min-h-20 rounded-2xl border p-2 text-left transition hover:-translate-y-1 ${
+              isSelected
+                ? "border-ember bg-cream shadow-sm"
+                : dayEvents.length
+                  ? "border-driftwood/15 bg-cream"
+                  : "border-transparent bg-cream/45"
+            } ${isPast ? "opacity-60" : ""}"
+            data-calendar-day="${date}"
+          >
+            <span class="font-display text-xl italic text-driftwood">${day}</span>
+            <span class="mt-2 flex flex-wrap gap-1">
+              ${dayEvents
+                .slice(0, 3)
+                .map((event: any) => `<span class="h-2 w-2 rounded-full" style="background:${event.color}"></span>`)
+                .join("")}
+            </span>
+          </button>
+        `);
+      }
+
+      grid.innerHTML = cells.join("");
+      grid.querySelectorAll<HTMLButtonElement>("[data-calendar-day]").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedDate = button.dataset.calendarDay ?? selectedDate;
+          render();
+        });
+      });
+      renderDetails();
+      renderLists();
+    }
+
+    prev.addEventListener("click", () => {
+      currentMonth -= 1;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear -= 1;
+      }
+      render();
+    });
+
+    next.addEventListener("click", () => {
+      currentMonth += 1;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear += 1;
+      }
+      render();
+    });
+
+    renderLegend();
+    render();
+  }
+
+  calendars.forEach(setupCalendar);
+  document.addEventListener("astro:after-swap", () => {
+    document.querySelectorAll<HTMLElement>("[data-session-calendar]").forEach(setupCalendar);
+  });
+</script>

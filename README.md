@@ -39,5 +39,26 @@ All commands run from the repository root:
 ## Notes
 
 - The site is framework-free at runtime: pages and UI are Astro templates with small inline scripts only where needed.
-- Service content lives in `src/lib/site-data.ts`.
+- Service content and all calendar sessions live in `src/lib/site-data.ts`.
 - Static images are referenced from `public/` with root-relative URLs.
+
+## Editing Calendar Sessions
+
+All service calendars use the single `sessionEvents` array in `src/lib/site-data.ts`.
+Add a new dated session there and it will appear in the global calendar plus the
+matching service page calendar.
+
+Example:
+
+```ts
+{
+  id: "vyohyke-2026-06-10",
+  serviceSlug: "vyohyketerapia",
+  date: "2026-06-10",
+  startTime: "17:30",
+  endTime: "18:30",
+  title: "Vyöhyketerapia",
+  location: contact.address,
+  summary: "Yksilöllinen hoitoaika Pasilan Urheilutalolla.",
+}
+```

@@ -66,6 +66,7 @@ Current active source files:
 src/
   components/
     Reveal.astro
+    SessionCalendar.astro
     SiteFooter.astro
     SiteNav.astro
     SoundWave.astro
@@ -139,6 +140,14 @@ Notable public assets:
 - Accepts `class` and optional `tint`.
 - Respects `prefers-reduced-motion`.
 
+`src/components/SessionCalendar.astro`:
+
+- Renders an interactive, Astro-native calendar for service sessions.
+- Accepts `events`, optional `serviceSlug`, optional `title`, and optional `emptyMessage`.
+- Uses local inline JavaScript for month navigation, day selection, event details, and upcoming/past lists.
+- Does not use React or client-side framework islands.
+- Can render a global all-services calendar or a filtered service-specific calendar.
+
 ## Data Model
 
 All service and contact data is centralized in `src/lib/site-data.ts`.
@@ -154,6 +163,19 @@ All service and contact data is centralized in `src/lib/site-data.ts`.
 - `duration`
 - `price`
 - `image`
+
+`SessionEvent` has:
+
+- `id`
+- `serviceSlug`
+- `date` in `YYYY-MM-DD`
+- `startTime`
+- optional `endTime`
+- `title`
+- `location`
+- `summary`
+- optional `bookingUrl`
+- optional `status`
 
 The `services` array currently contains six services:
 
@@ -172,7 +194,24 @@ The `services` array currently contains six services:
 - Address: `Pasilan Urheilutalo, Radiokatu 22, 00240 Helsinki`
 - Practitioner: `Nanna`
 
-When updating service names, slugs, prices, durations, images, or contact details, start in `site-data.ts` and then check affected pages.
+`sessionEvents` is the single source of truth for every calendar on the site. Add, edit, or remove session dates there. Events are keyed by `serviceSlug`, so adding an event for a service automatically shows it in the global calendars and that service detail page calendar.
+
+Example session event:
+
+```ts
+{
+  id: "vyohyke-2026-06-10",
+  serviceSlug: "vyohyketerapia",
+  date: "2026-06-10",
+  startTime: "17:30",
+  endTime: "18:30",
+  title: "Vyöhyketerapia",
+  location: contact.address,
+  summary: "Yksilöllinen hoitoaika Pasilan Urheilutalolla.",
+}
+```
+
+When updating service names, slugs, prices, durations, images, contact details, or session dates, start in `site-data.ts` and then check affected pages.
 
 ## Routes
 
@@ -193,15 +232,13 @@ Astro file-based routes currently generate 11 pages:
 `src/pages/index.astro`:
 
 - Homepage.
-- Uses `/hero-bowl.jpg` as the hero image.
-- Shows brand promise, first three services from `services.slice(0, 3)`, Nanna block, pricing teaser, gift card teaser, and contact CTA.
+- Shows brand promise, first three services from `services.slice(0, 3)`, Nanna block, global calendar, pricing teaser, gift card teaser, and contact CTA.
 
 `src/pages/palvelut.astro`:
 
 - Services overview.
 - Maps over the full `services` array.
-- Alternates image/text layout by service index.
-- Links each booking CTA to `/yhteys`.
+- Shows service cards and a global all-services calendar.
 
 `src/pages/palvelut/[slug].astro`:
 
@@ -209,6 +246,7 @@ Astro file-based routes currently generate 11 pages:
 - `getStaticPaths()` maps every service slug from `services`.
 - Uses the selected service as route props.
 - Shows a next-service card using the next item in `services`, wrapping back to the first service.
+- Shows a dedicated `SessionCalendar` filtered to the selected service slug.
 
 `src/pages/hinnasto.astro`:
 

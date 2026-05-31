@@ -1,7 +1,8 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Reveal from "../../components/Reveal.astro";
-import { services } from "../../lib/site-data";
+import SessionCalendar from "../../components/SessionCalendar.astro";
+import { services, sessionEvents } from "../../lib/site-data";
 import { Image } from "astro:assets";
 
 export async function getStaticPaths() {
@@ -92,6 +93,19 @@ const next = services[(idx + 1) % services.length];
             </Reveal>
           </div>
         </aside>
+      </div>
+    </section>
+
+    <section class="bg-cream py-16 text-driftwood md:py-24" data-theme="warm">
+      <div class="mx-auto max-w-7xl px-6 md:px-10">
+        <Reveal>
+          <SessionCalendar
+            events={sessionEvents}
+            serviceSlug={service.slug}
+            title={`${service.name} - kalenteri`}
+            emptyMessage={`Ei aikataulutettuja sessioita palvelulle ${service.name} juuri nyt. Uudet ajat lisätään tänne heti, kun ne varmistuvat.`}
+          />
+        </Reveal>
       </div>
     </section>
   </article>

@@ -1,0 +1,152 @@
+---
+import { contact } from "../lib/site-data";
+
+const navLinks = [
+  { href: "/palvelut", label: "Palvelut" },
+  { href: "/nanna", label: "Nanna" },
+  { href: "/hinnasto", label: "Hinnasto" },
+  { href: "/yhteys", label: "Yhteys" },
+] as const;
+
+const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+---
+
+<header
+  class="fixed inset-x-0 top-0 z-50 px-3 pt-3 transition-all duration-500 md:px-5"
+  data-site-header
+>
+  <nav
+    class="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 py-3 text-[var(--nav-fg)] shadow-[0_1rem_3rem_oklch(0.176_0.026_58_/_0.08)] backdrop-blur-xl transition-all duration-500 md:px-5"
+  >
+    <a href="/" class="group flex items-center gap-3" aria-label="Voima Lyhty etusivulle">
+      <span
+        class="grid h-10 w-10 place-items-center rounded-full bg-sun text-sm font-semibold text-ink shadow-lg shadow-sun/20 transition duration-300 group-hover:scale-105"
+      >
+        VL
+      </span>
+      <span class="font-display text-2xl italic leading-none">Voima Lyhty</span>
+    </a>
+
+    <ul class="hidden items-center gap-1 rounded-full bg-cream/45 p-1 md:flex">
+      {
+        navLinks.map((link) => {
+          const isActive = currentPath === link.href || currentPath.startsWith(`${link.href}/`);
+
+          return (
+            <li>
+              <a
+                href={link.href}
+                class:list={[
+                  "rounded-full px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-luxe transition",
+                  isActive
+                    ? "bg-driftwood text-sand shadow-sm"
+                    : "text-inherit hover:bg-sand/70 hover:text-ember",
+                ]}
+              >
+                {link.label}
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+
+    <div class="hidden items-center gap-3 md:flex">
+      <a
+        href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-primary min-h-0 px-5 py-3"
+      >
+        Varaa aika
+      </a>
+    </div>
+
+    <button
+      type="button"
+      class="grid h-11 w-11 place-items-center rounded-full border border-current/15 text-current transition hover:bg-sand/60 hover:text-ember md:hidden"
+      aria-label="Avaa navigaatio"
+      aria-controls="mobile-menu"
+      aria-expanded="false"
+      data-menu-toggle
+    >
+      <span class="relative h-3.5 w-5" aria-hidden="true">
+        <span class="absolute left-0 top-0 h-px w-full bg-current transition" data-menu-line></span>
+        <span class="absolute left-0 top-1/2 h-px w-full bg-current transition" data-menu-line></span>
+        <span class="absolute bottom-0 left-0 h-px w-full bg-current transition" data-menu-line></span>
+      </span>
+    </button>
+  </nav>
+
+  <div
+    id="mobile-menu"
+    class="pointer-events-none mx-auto mt-3 max-w-7xl translate-y-2 px-2 opacity-0 transition duration-300 md:hidden"
+    data-mobile-menu
+  >
+    <div class="rounded-[1.5rem] border border-[var(--nav-border)] bg-[var(--nav-bg)] p-3 text-[var(--nav-fg)] shadow-2xl backdrop-blur-xl">
+      <ul class="grid gap-1">
+        {
+          navLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="block rounded-2xl px-4 py-3 text-sm font-semibold uppercase tracking-luxe transition hover:bg-sand/70 hover:text-ember"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a
+        href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-primary mt-3 w-full"
+      >
+        Varaa aika
+      </a>
+    </div>
+  </div>
+</header>
+
+<script>
+  function setupMobileMenu() {
+    const toggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+    const menu = document.querySelector<HTMLElement>("[data-mobile-menu]");
+    const lines = toggle?.querySelectorAll<HTMLElement>("[data-menu-line]");
+
+    if (!toggle || !menu) return;
+
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute("aria-expanded", String(open));
+      menu.classList.toggle("pointer-events-none", !open);
+      menu.classList.toggle("translate-y-2", !open);
+      menu.classList.toggle("opacity-0", !open);
+      menu.classList.toggle("opacity-100", open);
+      lines?.[0]?.classList.toggle("translate-y-[7px]", open);
+      lines?.[0]?.classList.toggle("rotate-45", open);
+      lines?.[1]?.classList.toggle("opacity-0", open);
+      lines?.[2]?.classList.toggle("-translate-y-[7px]", open);
+      lines?.[2]?.classList.toggle("-rotate-45", open);
+    };
+
+    toggle.addEventListener("click", () => {
+      setOpen(toggle.getAttribute("aria-expanded") !== "true");
+    });
+
+    menu.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => setOpen(false));
+    });
+  }
+
+  setupMobileMenu();
+  document.addEventListener("astro:after-swap", setupMobileMenu);
+</script>
+
+<style>
+  header.is-scrolled nav {
+    transform: translateY(-2px);
+    box-shadow: 0 1rem 3rem oklch(0.176 0.026 58 / 0.16);
+  }
+</style>

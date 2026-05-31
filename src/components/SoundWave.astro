@@ -1,0 +1,91 @@
+---
+export interface Props {
+  class?: string;
+  tint?: string;
+}
+
+const { class: className = "", tint = "currentColor" } = Astro.props;
+const bars = [10, 18, 28, 22, 14, 24, 16, 8];
+---
+
+<svg
+  viewBox="0 0 120 40"
+  class={className}
+  aria-hidden="true"
+  fill="none"
+>
+  <path
+    class="resonance-line"
+    d="M2 21 C18 7 28 33 44 19 S74 12 92 21 110 31 118 17"
+    stroke={tint}
+    stroke-width="1.4"
+    stroke-linecap="round"
+    opacity="0.28"
+  />
+  {
+    bars.map((h, i) => (
+      <rect
+        x={i * 14 + 2}
+        y={20 - h / 2}
+        width={3}
+        height={h}
+        rx={1.5}
+        fill={tint}
+        class="sound-bar"
+        style={`--delay: ${i * 0.12}s`}
+      />
+    ))
+  }
+</svg>
+
+<style>
+  .sound-bar {
+    animation: wave 3.8s ease-in-out infinite;
+    animation-delay: var(--delay);
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  .resonance-line {
+    animation: line-breathe 5.5s ease-in-out infinite;
+  }
+
+  @keyframes wave {
+    0%, 100% {
+      opacity: 0.4;
+      transform: scaleY(0.4);
+    }
+    25% {
+      opacity: 0.9;
+      transform: scaleY(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scaleY(0.6);
+    }
+    75% {
+      opacity: 0.9;
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes line-breathe {
+    0%, 100% {
+      opacity: 0.18;
+      transform: translateY(1px);
+    }
+    50% {
+      opacity: 0.42;
+      transform: translateY(-1px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sound-bar,
+    .resonance-line {
+      animation: none;
+      opacity: 0.7;
+      transform: scaleY(1);
+    }
+  }
+</style>

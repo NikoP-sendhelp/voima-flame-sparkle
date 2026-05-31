@@ -1,7 +1,0 @@
-name = "voima-flame-sparkle"
-compatibility_date = "2026-05-30"
-type = "javascript"
-main = "dist/server/server.js"
-
-[site]
-bucket = "./dist/client"

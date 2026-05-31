@@ -1,0 +1,78 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Reveal from "../components/Reveal.astro";
+import { services, contact } from "../lib/site-data";
+---
+
+<BaseLayout
+  title="Hinnasto — Voima Lyhty"
+  description="Voima Lyhdyn hoitojen hinnasto: sointukylpy, äänimaljarentoutus, vyöhyketerapia, hermoratahieronta, facelift ja voimavara-terapia."
+>
+  <section class="ambient-section bg-cream pt-36 text-driftwood md:pt-44" data-theme="warm">
+    <div class="mx-auto max-w-5xl px-6 pb-16 text-center md:px-10">
+      <Reveal>
+        <span class="eyebrow text-ember">Hinnasto</span>
+      </Reveal>
+      <Reveal delay={0.1}>
+        <h1 class="display-lg mt-6 font-display italic text-driftwood">
+          Selkeä, <span class="text-ember">rehellinen, läsnä.</span>
+        </h1>
+      </Reveal>
+      <Reveal delay={0.2}>
+        <p class="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-driftwood/70">
+          Hinnat sisältävät arvonlisäveron. Maksu käteisellä tai MobilePaylla
+          paikan päällä. Peruutukset toivotaan vähintään 24 h ennen aikaa.
+        </p>
+      </Reveal>
+    </div>
+  </section>
+
+  <section class="bg-sand pb-28 text-driftwood md:pb-36" data-theme="warm">
+    <div class="mx-auto max-w-5xl px-6 md:px-10">
+      <Reveal>
+        <ul class="-mt-6 overflow-hidden rounded-[1.75rem] bg-cream shadow-[0_1.5rem_4rem_oklch(0.176_0.026_58_/_0.08)]">
+          {
+            services.map((s, i) => (
+              <li class="group grid grid-cols-12 items-center gap-4 border-b border-driftwood/10 p-5 transition hover:bg-mist/60 md:p-7">
+                <span class="col-span-2 font-display text-2xl italic text-ember md:col-span-1">{s.number}</span>
+                <div class="col-span-10 md:col-span-8">
+                  <a href={`/palvelut/${s.slug}`} class="font-display text-2xl italic text-driftwood transition group-hover:text-ember md:text-3xl">
+                    {s.name}
+                  </a>
+                  <p class="mt-1 text-[0.68rem] font-semibold uppercase tracking-luxe text-driftwood/48">
+                    {s.tagline} · {s.duration}
+                  </p>
+                </div>
+                <span class="col-span-12 text-left font-display text-3xl italic text-driftwood md:col-span-3 md:text-right">
+                  {s.price}
+                </span>
+              </li>
+            ))
+          }
+        </ul>
+      </Reveal>
+
+      <Reveal delay={0.18}>
+        <div class="ambient-section mt-12 overflow-hidden rounded-[1.75rem] bg-ink p-8 text-sand md:p-12" style='--ambient-image: url("/atmosphere-sound.webp"); --ambient-opacity: 0.28' data-theme="ember">
+          <div class="absolute inset-0 bg-gradient-to-br from-ink/95 via-driftwood/90 to-ember/65"></div>
+          <div class="relative grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
+            <div>
+              <span class="eyebrow text-sun">Lahjaksi</span>
+              <h2 class="mt-4 font-display text-4xl italic text-sand md:text-5xl">
+                Lahjakortit & paketit
+              </h2>
+              <p class="mt-4 max-w-2xl text-sm leading-relaxed text-sand/76">
+                Lahjakortin voi tilata mihin tahansa hoitoon tai vapaalla summalla.
+                Pyydä yksilöllinen lahjakortti viestillä — toimitan sen joko
+                sähköpostitse PDF:nä tai painettuna noudettavaksi.
+              </p>
+            </div>
+            <a href={`mailto:${contact.email}?subject=Lahjakortti`} class="btn-primary">
+              Tilaa lahjakortti
+            </a>
+          </div>
+        </div>
+      </Reveal>
+    </div>
+  </section>
+</BaseLayout>

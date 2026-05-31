@@ -1,0 +1,69 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Reveal from "../components/Reveal.astro";
+import { Image } from "astro:assets";
+---
+
+<BaseLayout
+  title="Nanna — Voima Lyhdyn yrittäjä"
+  description="Tutustu Nannaan — sertifioitu hoitaja, äänimaljaohjaaja ja lyhytterapeutti Helsingin Pasilassa."
+  ogImage="/nanna-portrait.jpg"
+>
+  <section class="ambient-section bg-cream pt-36 text-driftwood md:pt-44" style='--ambient-image: url("/atmosphere-inner.webp"); --ambient-opacity: 0.16' data-theme="warm">
+    <div class="mx-auto grid max-w-7xl gap-12 px-6 pb-20 md:grid-cols-12 md:px-10 md:pb-28">
+      <Reveal class="md:col-span-4">
+        <div class="media-frame mx-auto aspect-[4/5] max-h-[34rem] max-w-[27rem]">
+          <Image src="/nanna-portrait.jpg" alt="Nanna, Voima Lyhdyn yrittäjä" width={1024} height={1024} />
+        </div>
+      </Reveal>
+
+      <div class="md:col-span-8 md:pl-6">
+        <Reveal>
+          <span class="eyebrow text-ember">Tutustu</span>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <h1 class="display-lg mt-6 font-display italic text-driftwood">Nanna</h1>
+        </Reveal>
+        <Reveal delay={0.15}>
+          <p class="mt-4 font-display text-3xl italic text-ember">
+            Voima Lyhdyn sydän ja käsi.
+          </p>
+        </Reveal>
+        <Reveal delay={0.25}>
+          <div class="mt-10 space-y-6 text-lg leading-relaxed text-driftwood/74">
+            <p>
+              Olen Nanna — sertifioitu hoitaja, äänimaljaohjaaja ja lyhytterapeutti.
+              Olen viettänyt vuosia kuunnellen, mitä keho kertoo silloin, kun
+              mieli vielä vaikenee. Tästä syntyi Voima Lyhty.
+            </p>
+            <p>
+              Työskentelyni perusta on läsnäolo. Uskon, että jokaisessa meissä
+              asuu syvä viisaus — ja että tehtäväni on tarjota tila, jossa se
+              voi nousta pintaan ilman kiirettä.
+            </p>
+            <p>
+              Studioni on Pasilan Urheilutalon iltavalossa, missä gongien kaiku
+              sekoittuu kaupungin sykkeeseen. Tervetuloa rauhaan.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.35}>
+          <blockquote class="mt-12 rounded-[1.5rem] border border-ember/20 bg-sand/70 p-7 font-display text-3xl italic leading-snug text-driftwood shadow-sm">
+            "Kohtaan jokaisen asiakkaan lämmöllä ja läsnäololla. Se on usein
+            juuri se, mitä tarvitsemme eniten."
+          </blockquote>
+        </Reveal>
+
+        <Reveal delay={0.45}>
+          <div class="mt-10 flex flex-col gap-3 sm:flex-row">
+            <a href="/palvelut" class="btn-primary">Katso palvelut</a>
+            <a href="/yhteys" class="btn-secondary border-driftwood/25 text-driftwood hover:bg-driftwood hover:text-sand">
+              Varaa aika
+            </a>
+          </div>
+        </Reveal>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

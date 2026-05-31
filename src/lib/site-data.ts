@@ -1,10 +1,3 @@
-import aanimaljaImg from "@/assets/service-aanimalja.jpg";
-import sointukylpyImg from "@/assets/service-sointukylpy.jpg";
-import vyohykeImg from "@/assets/service-vyohyke.jpg";
-import hermorataImg from "@/assets/service-hermorata.jpg";
-import faceliftImg from "@/assets/service-facelift.jpg";
-import voimavaraImg from "@/assets/service-voimavara.jpg";
-
 export type Service = {
   slug: string;
   number: string;
@@ -31,7 +24,7 @@ export const services: Service[] = [
     ],
     duration: "60 min",
     price: "75 €",
-    image: aanimaljaImg,
+    image: "/service-aanimalja.jpg",
   },
   {
     slug: "sointukylpy",
@@ -42,11 +35,11 @@ export const services: Service[] = [
       "Yhteinen meditaatio, jossa maljat ja gongit luovat tilan — kelluva, hiljainen, kantava.",
     body: [
       "Kokoonnumme keskiviikkoiltaisin Pasilan Urheilutalon studiohuoneeseen. Tunti alkaa klo 18:30, ja sinun tehtäväsi on vain hengittää.",
-      "Sointukylpy on lempeä tapa irrottautua viikon kuormasta. Useimmat osallistujat kuvaavat oloaan jälkeenpäin sanalla ”koti”.",
+      "Sointukylpy on lempeä tapa irrottautua viikon kuormasta. Useimmat osallistujat kuvaavat oloaan jälkeenpäin sanalla \"koti\".",
     ],
     duration: "60 min",
     price: "25 €",
-    image: sointukylpyImg,
+    image: "/service-sointukylpy.jpg",
   },
   {
     slug: "vyohyketerapia",
@@ -61,7 +54,7 @@ export const services: Service[] = [
     ],
     duration: "60 min",
     price: "70 €",
-    image: vyohykeImg,
+    image: "/service-vyohyke.jpg",
   },
   {
     slug: "hermoratahieronta",
@@ -76,7 +69,7 @@ export const services: Service[] = [
     ],
     duration: "60 min",
     price: "75 €",
-    image: hermorataImg,
+    image: "/service-hermorata.jpg",
   },
   {
     slug: "rentouttava-facelift",
@@ -91,7 +84,7 @@ export const services: Service[] = [
     ],
     duration: "45 min",
     price: "65 €",
-    image: faceliftImg,
+    image: "/service-facelift.jpg",
   },
   {
     slug: "voimavaraterapia",
@@ -106,22 +99,8 @@ export const services: Service[] = [
     ],
     duration: "60 min",
     price: "85 €",
-    image: voimavaraImg,
+    image: "/service-voimavara.jpg",
   },
-];
-
-export const sointukylpyDates: { year: number; month: number; day: number }[] = [
-  { year: 2026, month: 1, day: 21 },
-  { year: 2026, month: 1, day: 28 },
-  { year: 2026, month: 2, day: 18 },
-  { year: 2026, month: 2, day: 25 },
-  { year: 2026, month: 3, day: 4 },
-  { year: 2026, month: 3, day: 25 },
-  { year: 2026, month: 4, day: 1 },
-  { year: 2026, month: 4, day: 8 },
-  { year: 2026, month: 4, day: 15 },
-  { year: 2026, month: 4, day: 29 },
-  { year: 2026, month: 6, day: 29 },
 ];
 
 export const contact = {

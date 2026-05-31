@@ -1,0 +1,17 @@
+---
+export type Props = {
+  as?: "div" | "section" | "article" | "header" | "footer" | "li";
+  delay?: number;
+  class?: string;
+};
+
+const { as: Element = "div", class: className = "", delay = 0 } = Astro.props;
+---
+
+<Element
+  class={`reveal ${className}`}
+  style={`--reveal-delay: ${delay}s`}
+  data-reveal
+>
+  <slot />
+</Element>

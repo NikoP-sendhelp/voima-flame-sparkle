@@ -1,0 +1,65 @@
+---
+import SoundWave from "./SoundWave.astro";
+import { contact } from "../lib/site-data";
+---
+
+<footer class="ambient-section bg-ink text-sand" style='--ambient-image: url("/atmosphere-hero.webp"); --ambient-opacity: 0.18'>
+  <div class="absolute inset-0 bg-gradient-to-br from-ink via-driftwood/95 to-ember/55"></div>
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sun/70 to-transparent"></div>
+
+  <div class="relative mx-auto grid max-w-7xl gap-12 px-6 py-20 md:grid-cols-12 md:px-10 md:py-28">
+    <div class="md:col-span-5">
+      <div class="flex items-center gap-4">
+        <span class="font-display text-4xl italic">Voima Lyhty</span>
+        <SoundWave class="h-8 w-16 text-sun" />
+      </div>
+      <p class="mt-7 max-w-md font-display text-3xl italic leading-tight text-sand/88">
+        Sointu sisälläsi. Rauha, johon palata.
+      </p>
+      <p class="mt-6 max-w-sm text-sm leading-relaxed text-sand/68">
+        Äänimaljarentoutusta, kosketuksellisia hoitoja ja lyhytterapiaa
+        Helsingin Pasilassa. Tervetuloa vanhat ja uudet ystävät.
+      </p>
+    </div>
+
+    <div class="md:col-span-3">
+      <h4 class="eyebrow mb-6 text-sun">Sijainti</h4>
+      <p class="text-sm leading-loose text-sand/72">
+        Pasilan Urheilutalo<br />
+        Radiokatu 22<br />
+        00240 Helsinki<br />
+        <span class="text-sand/45">Iltaisin klo 17 alkaen</span>
+      </p>
+    </div>
+
+    <div class="md:col-span-4">
+      <h4 class="eyebrow mb-6 text-sun">Ota yhteyttä</h4>
+      <div class="grid gap-3">
+        <a
+          href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group rounded-3xl border border-sand/12 bg-sand/7 p-5 transition hover:-translate-y-1 hover:border-sun/50 hover:bg-sand/12"
+        >
+          <span class="eyebrow block text-sand/45">WhatsApp</span>
+          <span class="mt-2 block font-display text-2xl italic text-sand group-hover:text-sun">
+            {contact.phone}
+          </span>
+        </a>
+        <a
+          href={`mailto:${contact.email}`}
+          class="group rounded-3xl border border-sand/12 bg-sand/7 p-5 transition hover:-translate-y-1 hover:border-sun/50 hover:bg-sand/12"
+        >
+          <span class="eyebrow block text-sand/45">Sähköposti</span>
+          <span class="mt-2 block break-words font-display text-2xl italic text-sand group-hover:text-sun">
+            {contact.email}
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative mx-auto max-w-7xl border-t border-sand/10 px-6 py-8 text-center text-[0.65rem] uppercase tracking-luxe text-sand/50 md:px-10">
+    © {new Date().getFullYear()} Voima Lyhty. Kaikki oikeudet pidätetään.
+  </div>
+</footer>

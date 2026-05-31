@@ -1,0 +1,101 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Reveal from "../components/Reveal.astro";
+import { contact } from "../lib/site-data";
+---
+
+<BaseLayout
+  title="Yhteys — Voima Lyhty | Pasilan Urheilutalo Helsinki"
+  description="Varaa aika WhatsApp-viestillä 040 553 5388 tai sähköpostilla. Pasilan Urheilutalo, Radiokatu 22, Helsinki."
+>
+  <section class="ambient-section bg-ink pt-36 text-sand md:pt-44" style='--ambient-image: url("/atmosphere-inner.webp"); --ambient-opacity: 0.26' data-theme="dark">
+    <div class="absolute inset-0 bg-gradient-to-b from-ink/78 via-ink/80 to-sand"></div>
+    <div class="relative mx-auto max-w-5xl px-6 pb-20 text-center md:px-10">
+      <Reveal>
+        <span class="eyebrow text-sun">Yhteys</span>
+      </Reveal>
+      <Reveal delay={0.1}>
+        <h1 class="display-lg mt-6 font-display italic text-sand">
+          Lähetä viesti. <span class="text-sun">Vastaan pian.</span>
+        </h1>
+      </Reveal>
+      <Reveal delay={0.2}>
+        <p class="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-sand/76">
+          Helpoin tapa varata aika tai kysyä lisää on tekstiviesti tai WhatsApp.
+          Vastaan iltaisin viimeistään seuraavana päivänä.
+        </p>
+      </Reveal>
+    </div>
+  </section>
+
+  <section class="bg-sand pb-28 text-driftwood md:pb-36" data-theme="warm">
+    <div class="mx-auto -mt-10 max-w-6xl px-6 md:px-10">
+      <div class="grid gap-5 md:grid-cols-2">
+        <Reveal>
+          <a
+            href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group block h-full rounded-[1.75rem] bg-cream p-8 shadow-[0_1.5rem_4rem_oklch(0.176_0.026_58_/_0.08)] transition hover:-translate-y-2 md:p-12"
+          >
+            <span class="eyebrow text-ember">Puhelin & WhatsApp</span>
+            <span class="mt-5 block font-display text-5xl italic leading-none text-driftwood group-hover:text-ember">
+              {contact.phone}
+            </span>
+            <p class="mt-5 text-sm leading-relaxed text-driftwood/62">
+              Tekstiviestit ja WhatsApp-viestit toivotuimpia. Puheluihin vastaan
+              kun se on mahdollista.
+            </p>
+          </a>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <a
+            href={`mailto:${contact.email}`}
+            class="group block h-full rounded-[1.75rem] bg-mist p-8 shadow-[0_1.5rem_4rem_oklch(0.176_0.026_58_/_0.06)] transition hover:-translate-y-2 md:p-12"
+          >
+            <span class="eyebrow text-ember">Sähköposti</span>
+            <span class="mt-5 block break-words font-display text-4xl italic leading-tight text-driftwood group-hover:text-ember md:text-5xl">
+              {contact.email}
+            </span>
+            <p class="mt-5 text-sm leading-relaxed text-driftwood/62">
+              Sopii pidempiin kysymyksiin, ryhmien tiedusteluihin ja
+              lahjakorttitilauksiin.
+            </p>
+          </a>
+        </Reveal>
+      </div>
+
+      <Reveal delay={0.18}>
+        <div class="ambient-section mt-5 overflow-hidden rounded-[1.75rem] bg-ink p-8 text-sand md:p-12" style='--ambient-image: url("/atmosphere-sound.webp"); --ambient-opacity: 0.24' data-theme="ember">
+          <div class="absolute inset-0 bg-gradient-to-br from-ink/95 via-driftwood/92 to-ember/60"></div>
+          <div class="relative grid gap-10 md:grid-cols-3">
+            <div>
+              <span class="eyebrow text-sun">Sijainti</span>
+              <p class="mt-4 font-display text-3xl italic leading-snug">
+                Pasilan Urheilutalo<br />
+                Radiokatu 22<br />
+                00240 Helsinki
+              </p>
+            </div>
+            <div>
+              <span class="eyebrow text-sun">Aukioloajat</span>
+              <p class="mt-4 font-display text-3xl italic leading-snug">
+                Ma-Pe<br />
+                <span class="text-sand/70">Klo 17 alkaen</span>
+              </p>
+            </div>
+            <div>
+              <span class="eyebrow text-sun">Liikenneyhteydet</span>
+              <p class="mt-4 text-sm leading-relaxed text-sand/78">
+                <strong>Metro:</strong> Pasila<br />
+                <strong>Bussi:</strong> 39, 72, 92<br />
+                <strong>Pysäköinti:</strong> Saatavilla
+              </p>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+    </div>
+  </section>
+</BaseLayout>

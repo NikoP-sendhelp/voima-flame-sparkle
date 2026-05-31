@@ -1,0 +1,219 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Reveal from "../components/Reveal.astro";
+import SoundWave from "../components/SoundWave.astro";
+import { services, contact } from "../lib/site-data";
+import { Image } from "astro:assets";
+
+const featured = services.slice(0, 3);
+---
+
+<BaseLayout
+  title="Voima Lyhty — Sointu sisälläsi | Äänimaljarentoutus Helsinki"
+  description="Äänimaljarentoutus, sointukylvyt ja kosketukselliset hoidot Pasilan Urheilutalolla. Tervetuloa rauhoittumaan Helsingin sydämeen."
+>
+  <section class="relative min-h-[92svh] overflow-hidden bg-ink text-sand" data-theme="dark">
+    <div class="absolute inset-0">
+      <Image
+        src="/atmosphere-hero.webp"
+        alt=""
+        width={1672}
+        height={941}
+        class="h-full w-full object-cover animate-slow-zoom"
+      />
+      <div class="absolute inset-0 bg-gradient-to-b from-ink/30 via-ink/35 to-ink/88"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_48%_46%,transparent_0,oklch(0.176_0.026_58_/_0.24)_40%,oklch(0.176_0.026_58_/_0.76)_100%)]"></div>
+    </div>
+
+    <div class="relative z-10 mx-auto flex min-h-[92svh] max-w-7xl flex-col justify-end px-6 pb-14 pt-32 md:px-10 md:pb-18">
+      <Reveal>
+        <span class="eyebrow text-sun">Pasilan Urheilutalo · Helsinki</span>
+      </Reveal>
+      <Reveal delay={0.08}>
+        <h1 class="display-xl mt-6 max-w-5xl font-display italic text-sand">
+          Sointu<br />
+          <span class="text-sun">sisälläsi.</span>
+        </h1>
+      </Reveal>
+      <div class="mt-8 grid gap-8 md:grid-cols-[minmax(0,36rem)_1fr] md:items-end">
+        <Reveal delay={0.16}>
+          <p class="max-w-xl text-lg font-light leading-relaxed text-sand/82">
+            Äänimaljojen värähtely, lempeä kosketus ja iltavalon rauha.
+            Paikka, jossa keho saa muistaa hiljaisuuden.
+          </p>
+        </Reveal>
+        <Reveal delay={0.24}>
+          <div class="flex flex-col gap-3 sm:flex-row md:justify-end">
+            <a href="/palvelut" class="btn-primary">Tutustu hoitoihin</a>
+            <a href="/yhteys" class="btn-secondary border-sand/45 text-sand hover:bg-sand hover:text-ink">
+              Varaa aika
+            </a>
+          </div>
+        </Reveal>
+      </div>
+
+      <Reveal delay={0.32}>
+        <div class="mt-14 grid gap-3 border-t border-sand/15 pt-6 text-sand/68 md:grid-cols-3">
+          <span class="eyebrow">Äänimaljat</span>
+          <span class="eyebrow">Kosketushoidot</span>
+          <span class="eyebrow">Lyhytterapia</span>
+        </div>
+      </Reveal>
+
+      <div class="absolute bottom-8 right-6 hidden md:block">
+        <SoundWave class="h-10 w-28 text-sun/80" />
+      </div>
+    </div>
+  </section>
+
+  <section class="ambient-section section-pad bg-cream text-driftwood" data-theme="warm">
+    <div class="mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-12 md:px-10">
+      <Reveal class="md:col-span-5">
+        <span class="eyebrow text-ember">Läsnäolon taito</span>
+        <h2 class="display-md mt-6 font-display text-driftwood">
+          Pysähdy hetkeksi. <span class="italic text-ember">Kuule, mitä kehosi kuiskaa.</span>
+        </h2>
+      </Reveal>
+      <Reveal delay={0.12} class="md:col-span-6 md:col-start-7">
+        <p class="text-lg leading-relaxed text-driftwood/72">
+          Voima Lyhty on rauhan saareke Helsingin sydämessä. Käytämme ääntä,
+          kosketusta ja hiljaisuutta työkaluina, jotka palauttavat sinut
+          takaisin omaan rytmiisi.
+        </p>
+        <div class="mt-8 grid gap-3 sm:grid-cols-3">
+          {["Hengitä", "Kuuntele", "Palaudu"].map((word) => (
+            <div class="rounded-full border border-driftwood/12 bg-sand/75 px-5 py-3 text-center font-display text-xl italic text-driftwood shadow-sm">
+              {word}
+            </div>
+          ))}
+        </div>
+      </Reveal>
+    </div>
+  </section>
+
+  <section class="section-pad bg-mist text-driftwood" data-theme="mist">
+    <div class="mx-auto max-w-7xl px-6 md:px-10">
+      <Reveal>
+        <div class="mb-14 flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
+          <div class="max-w-2xl">
+            <span class="eyebrow text-ember">Palvelumme</span>
+            <h2 class="display-md mt-4 font-display italic text-driftwood">
+              Hoidot, jotka resonoivat sinussa
+            </h2>
+          </div>
+          <a href="/palvelut" class="hover-link text-ember">Katso kaikki palvelut</a>
+        </div>
+      </Reveal>
+
+      <div class="grid gap-5 md:grid-cols-3">
+        {
+          featured.map((s, i) => (
+            <Reveal delay={i * 0.1}>
+              <a href={`/palvelut/${s.slug}`} class="group block rounded-[1.5rem] bg-cream p-3 shadow-[0_1.5rem_4rem_oklch(0.176_0.026_58_/_0.08)] transition duration-500 hover:-translate-y-1.5">
+                <div class="media-frame aspect-[16/11] rounded-[1.1rem]">
+                  <Image src={s.image} alt={s.name} width={1024} height={1024} loading="lazy" />
+                </div>
+                <div class="p-4">
+                  <div class="flex items-center gap-3">
+                    <span class="font-display text-sm italic text-ember">{s.number}</span>
+                    <span class="h-px flex-1 bg-driftwood/12"></span>
+                  </div>
+                  <h3 class="mt-3 font-display text-2xl italic text-driftwood">{s.name}</h3>
+                  <p class="mt-3 text-sm leading-relaxed text-driftwood/66">{s.short}</p>
+                  <span class="hover-link mt-5 text-ember">Lue lisää</span>
+                </div>
+              </a>
+            </Reveal>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="ambient-section section-pad bg-ink text-sand" style='--ambient-image: url("/atmosphere-inner.webp"); --ambient-opacity: 0.18' data-theme="dark">
+    <div class="absolute inset-0 bg-gradient-to-r from-ink via-ink/90 to-driftwood/72"></div>
+    <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-6 md:grid-cols-2 md:px-10">
+      <Reveal>
+        <div class="media-frame mx-auto aspect-[4/5] max-h-[34rem] max-w-[28rem]">
+          <Image src="/nanna-portrait.jpg" alt="Nanna, Voima Lyhdyn yrittäjä" width={1024} height={1024} loading="lazy" />
+        </div>
+      </Reveal>
+      <Reveal delay={0.14}>
+        <span class="eyebrow text-sun">Nannan tarina</span>
+        <h2 class="display-md mt-4 font-display italic text-sand">Voima Lyhdyn takana</h2>
+        <div class="mt-8 space-y-5 text-base font-light leading-relaxed text-sand/78">
+          <p>
+            Olen Nanna — sertifioitu hoitaja, äänimaljaohjaaja ja lyhytterapeutti.
+            Matkani hyvinvoinnin äärelle alkoi halusta tarjota ihmisille tila,
+            jossa voi kuulla itseään ilman kohinaa.
+          </p>
+          <p>
+            Pasilan urheilutalon studio on minulle turvasatama, johon ääni,
+            kosketus ja hiljaisuus kutoutuvat yhdeksi kokonaisuudeksi.
+          </p>
+        </div>
+        <a href="/nanna" class="btn-secondary mt-10 border-sun text-sun hover:bg-sun hover:text-ink">
+          Tutustu Nannaan
+        </a>
+      </Reveal>
+    </div>
+  </section>
+
+  <section class="section-pad bg-cream text-driftwood" data-theme="warm">
+    <div class="mx-auto grid max-w-6xl gap-5 px-6 md:grid-cols-2 md:px-10">
+      <Reveal>
+        <div class="glass-panel flex h-full flex-col justify-between rounded-[1.75rem] p-8 md:p-12">
+          <div>
+            <span class="eyebrow text-ember">Hinnasto</span>
+            <h3 class="mt-4 font-display text-4xl italic text-driftwood">Hoidot alkaen 25 €</h3>
+            <p class="mt-4 text-sm leading-relaxed text-driftwood/66">
+              Sointukylpy ryhmässä 25 €. Yksilöhoidot 65–85 €.
+              Voimavara-terapia 85 € / 60 min.
+            </p>
+          </div>
+          <a href="/hinnasto" class="btn-secondary mt-10 self-start border-driftwood/30 text-driftwood hover:bg-driftwood hover:text-sand">
+            Koko hinnasto
+          </a>
+        </div>
+      </Reveal>
+      <Reveal delay={0.1}>
+        <div class="flex h-full flex-col justify-between overflow-hidden rounded-[1.75rem] bg-ember p-8 text-sand shadow-[0_1.5rem_4rem_oklch(0.58_0.142_38_/_0.16)] md:p-12">
+          <div>
+            <span class="eyebrow text-sand/70">Lahjaksi rauhaa</span>
+            <h3 class="mt-4 font-display text-4xl italic">Lahjakortti hoitoihin</h3>
+            <p class="mt-4 text-sm leading-relaxed text-sand/80">
+              Anna lahjaksi aikaa. Lahjakortit kaikkiin hoitoihin yksilön
+              toiveen mukaan — tilaus tekstiviestillä tai sähköpostilla.
+            </p>
+          </div>
+          <a href={`mailto:${contact.email}?subject=Lahjakortti`} class="btn-secondary mt-10 self-start border-sand/45 text-sand hover:bg-sand hover:text-ember">
+            Tilaa lahjakortti
+          </a>
+        </div>
+      </Reveal>
+    </div>
+  </section>
+
+  <section class="ambient-section section-pad bg-sand text-driftwood" data-theme="warm">
+    <div class="mx-auto max-w-4xl px-6 text-center">
+      <Reveal>
+        <span class="eyebrow text-ember">Aloita</span>
+      </Reveal>
+      <Reveal delay={0.1}>
+        <h2 class="display-md mt-6 font-display italic text-driftwood">
+          Matka rauhaan <span class="text-ember">alkaa viestillä.</span>
+        </h2>
+      </Reveal>
+      <Reveal delay={0.2}>
+        <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <a href={`https://wa.me/${contact.phoneIntl.replace("+", "")}`} target="_blank" rel="noopener noreferrer" class="btn-primary">
+            WhatsApp {contact.phone}
+          </a>
+          <a href={`mailto:${contact.email}`} class="btn-secondary border-driftwood/25 text-driftwood hover:bg-driftwood hover:text-sand">
+            {contact.email}
+          </a>
+        </div>
+      </Reveal>
+    </div>
+  </section>
+</BaseLayout>

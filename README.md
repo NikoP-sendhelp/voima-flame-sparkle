@@ -58,9 +58,10 @@ All commands run from the repository root:
    - `npx wrangler secret put SESSION_SECRET`
 4. Generate the recommended `ADMIN_PASSWORD_RECORD` value before step 3:
    - Node:
-     - `node -e "const c=require('crypto');const p=process.argv[1];const i=210000;const s=c.randomBytes(16).toString('hex');const h=c.pbkdf2Sync(p,Buffer.from(s,'hex'),i,32,'sha256').toString('hex');console.log(\`pbkdf2$sha256$\${i}$\${s}$\${h}\`)" "YOUR_PASSWORD_HERE"`
+     - `node -e "const c=require('crypto');const p=process.argv[1];const i=100000;const s=c.randomBytes(16).toString('hex');const h=c.pbkdf2Sync(p,Buffer.from(s,'hex'),i,32,'sha256').toString('hex');console.log(\`pbkdf2$sha256$\${i}$\${s}$\${h}\`)" "YOUR_PASSWORD_HERE"`
    - Use the printed value when prompted for `ADMIN_PASSWORD_RECORD`.
    - Paste the value exactly as printed (without extra quotes or line breaks).
+   - Note: current Worker runtime accepts at most `100000` PBKDF2 iterations.
 5. Generate `SESSION_SECRET` (long random value) before step 3:
    - Node: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
    - Use the printed value when prompted for `SESSION_SECRET`.
@@ -83,6 +84,7 @@ The Worker now stores editable documents in KV:
 
 - `missing_worker_secrets` error: one or more secrets are missing.
 - `invalid_password_record` error: `ADMIN_PASSWORD_RECORD` is malformed. Re-generate it and paste exactly without quotes/newline.
+- `NotSupportedError ... iteration counts above 100000`: regenerate `ADMIN_PASSWORD_RECORD` with `i=100000` and update the secret.
 - Login always fails: verify `ADMIN_USER` and `ADMIN_PASSWORD_RECORD` values are from the same setup.
 - Content is not updating publicly: confirm `CONTENT_KV` IDs are correct and deployment completed.
 - Local preview mismatch: ensure both `id` and `preview_id` are populated in `wrangler.json`.

@@ -68,6 +68,8 @@ const SESSION_TTL_SECONDS = 60 * 60 * 8;
 const LOGIN_RATE_KEY_PREFIX = "rate:login";
 const MAX_LOGIN_ATTEMPTS = 8;
 const LOGIN_LOCK_SECONDS = 60 * 10;
+const PBKDF2_ITERATIONS_MIN = 100_000;
+const PBKDF2_ITERATIONS_MAX = 100_000;
 
 const defaultServices: AdminService[] = services.map((service) => ({
   ...service,
@@ -171,7 +173,11 @@ function normalizePasswordRecord(raw: string | undefined): PasswordRecordParseRe
   }
 
   const iterations = Number.parseInt(rawIterations, 10);
-  if (!Number.isFinite(iterations) || iterations < 100_000 || iterations > 1_000_000) {
+  if (
+    !Number.isFinite(iterations) ||
+    iterations < PBKDF2_ITERATIONS_MIN ||
+    iterations > PBKDF2_ITERATIONS_MAX
+  ) {
     return { ok: false, reason: "iterations" };
   }
 
@@ -1011,11 +1017,23 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
     );
     return json({ error: "invalid_password_record" }, { status: 500 });
   }
-  const derived = await pbkdf2Sha256Hex(
-    password,
-    parsedRecord.value.saltHex,
-    parsedRecord.value.iterations,
-  );
+  let derived = "";
+  try {
+    derived = await pbkdf2Sha256Hex(
+      password,
+      parsedRecord.value.saltHex,
+      parsedRecord.value.iterations,
+    );
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "admin_auth_runtime_error",
+        error: "pbkdf2_runtime_not_supported",
+        message: error instanceof Error ? error.message : "unknown",
+      }),
+    );
+    return json({ error: "invalid_password_record" }, { status: 500 });
+  }
   const passOk = timingSafeEqual(derived, parsedRecord.value.hashHex);
 
   if (!userOk || !passOk) {

@@ -91,6 +91,13 @@ Static assets live in `public/` and are referenced with root-relative URLs such 
 
 `public/.assetsignore` excludes `_worker.js`, `_routes.json`, `_headers`, and `_redirects` from copied static assets.
 
+Admin UI static assets:
+
+- `public/admin/login.css`
+- `public/admin/login.js`
+- `public/admin/panel.css`
+- `public/admin/panel.js`
+
 Notable public assets:
 
 - `hero-bowl.jpg`
@@ -158,6 +165,7 @@ Notable public assets:
 - Uses signed HttpOnly cookie sessions, CSRF checks for mutating APIs, and KV-based login rate limiting.
 - Admin login requires Worker secrets `ADMIN_USER`, `ADMIN_PASSWORD_RECORD`, and `SESSION_SECRET`.
 - Falls back to static `site-data.ts` seed values when KV documents do not exist yet.
+- Admin HTML shells now load UI behavior/styles from `public/admin/*` assets (no large inline editor script).
 
 ## Data Model
 

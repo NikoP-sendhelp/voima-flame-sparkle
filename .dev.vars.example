@@ -1,0 +1,6 @@
+# Local Wrangler development variables for admin login.
+# Copy this file to `.dev.vars` and replace values.
+
+ADMIN_USER=admin
+ADMIN_PASSWORD_RECORD=pbkdf2$sha256$100000$REPLACE_WITH_32_HEX_SALT$REPLACE_WITH_64_HEX_HASH
+SESSION_SECRET=REPLACE_WITH_LONG_RANDOM_HEX

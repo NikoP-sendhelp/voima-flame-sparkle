@@ -54,18 +54,25 @@ All commands run from the repository root:
    - `kv_namespaces[0].preview_id` = preview namespace ID
 3. Set admin secrets:
    - `npx wrangler secret put ADMIN_USER`
-   - `npx wrangler secret put ADMIN_PASSWORD_HASH`
+   - `npx wrangler secret put ADMIN_PASSWORD_RECORD`
+   - `npx wrangler secret put ADMIN_PASSWORD_HASH` (legacy fallback, optional)
    - `npx wrangler secret put SESSION_SECRET`
-4. Generate the `ADMIN_PASSWORD_HASH` value as SHA-256 hex before step 3:
+4. Generate the recommended `ADMIN_PASSWORD_RECORD` value before step 3:
+   - Node:
+     - `node -e "const c=require('crypto');const p=process.argv[1];const i=210000;const s=c.randomBytes(16).toString('hex');const h=c.pbkdf2Sync(p,Buffer.from(s,'hex'),i,32,'sha256').toString('hex');console.log(\`pbkdf2$sha256$\${i}$\${s}$\${h}\`)" "YOUR_PASSWORD_HERE"`
+   - Use the printed value when prompted for `ADMIN_PASSWORD_RECORD`.
+5. Optional legacy fallback (`ADMIN_PASSWORD_HASH`) if you are migrating existing setup:
    - Node: `node -e "const c=require('crypto'); console.log(c.createHash('sha256').update(process.argv[1]).digest('hex'))" "YOUR_PASSWORD_HERE"`
-   - Use the printed hash value when prompted for `ADMIN_PASSWORD_HASH`.
-5. Generate `SESSION_SECRET` (long random value) before step 3:
+   - Use only when you intentionally want legacy SHA-256 auth fallback.
+6. Generate `SESSION_SECRET` (long random value) before step 3:
    - Node: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
    - Use the printed value when prompted for `SESSION_SECRET`.
-6. Verify and deploy:
+7. Verify and deploy:
+   - Optional (when local environment allows Wrangler runtime-type generation):
+     - `WRANGLER_LOG_PATH=.wrangler/logs npx wrangler types ./worker-configuration.d.ts`
    - `npm run check`
    - `npm run deploy`
-7. Open `/admin`:
+8. Open `/admin`:
    - unauthenticated users are redirected to `/admin/login`
    - after login, use tabs to manage sessions/services/site text/news scaffold
 
@@ -78,7 +85,7 @@ The Worker now stores editable documents in KV:
 ### Admin Troubleshooting
 
 - `missing_worker_secrets` error: one or more secrets are missing.
-- Login always fails: verify `ADMIN_USER` and `ADMIN_PASSWORD_HASH` values.
+- Login always fails: verify `ADMIN_USER`, `ADMIN_PASSWORD_RECORD` (or legacy `ADMIN_PASSWORD_HASH`) values.
 - Content is not updating publicly: confirm `CONTENT_KV` IDs are correct and deployment completed.
 - Local preview mismatch: ensure both `id` and `preview_id` are populated in `wrangler.json`.
 - After rotating `SESSION_SECRET`, all existing admin sessions are invalidated and users must log in again.

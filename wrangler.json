@@ -1,7 +1,11 @@
 {
+	"$schema": "./node_modules/wrangler/config-schema.json",
 	"name": "voima-flame-sparkle",
 	"main": "src/worker.ts",
-	"compatibility_date": "2025-10-08",
+	"compatibility_date": "2026-05-31",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
 	"assets": {
 		"directory": "./dist",
 		"not_found_handling": "404-page"
@@ -9,11 +13,12 @@
 	"kv_namespaces": [
 		{
 			"binding": "CONTENT_KV",
-			"id": "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID",
-			"preview_id": "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"
+			"id": "0efc2a593b2b4194a51c3f77b8c10201",
+			"preview_id": "57c1987f8bba4edda6432101353ed588"
 		}
 	],
 	"observability": {
-		"enabled": true
+		"enabled": true,
+		"head_sampling_rate": 1
 	}
 }

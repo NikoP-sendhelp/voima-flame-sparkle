@@ -1,23 +1,5 @@
 import { contact, services, sessionEvents } from "./lib/site-data";
 
-type AssetBinding = {
-  fetch: (request: Request | URL | string) => Promise<Response>;
-};
-
-type KvBinding = {
-  get: (key: string, options?: { type: "text" }) => Promise<string | null>;
-  put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>;
-  delete: (key: string) => Promise<void>;
-};
-
-type Env = {
-  ASSETS: AssetBinding;
-  CONTENT_KV?: KvBinding;
-  ADMIN_USER?: string;
-  ADMIN_PASSWORD_HASH?: string;
-  SESSION_SECRET?: string;
-};
-
 type SessionEventStatus = "scheduled" | "cancelled" | "sold-out";
 
 type AdminService = {
@@ -116,24 +98,26 @@ function json(data: unknown, init: ResponseInit = {}): Response {
   });
 }
 
-function html(content: string, init: ResponseInit = {}): Response {
+function html(content: string, nonce: string, init: ResponseInit = {}): Response {
   return new Response(content, {
     ...init,
     headers: {
       "content-type": "text/html; charset=utf-8",
-      ...securityHeaders(),
+      ...securityHeaders(nonce),
       ...(init.headers ?? {}),
     },
   });
 }
 
-function securityHeaders(): Record<string, string> {
+function securityHeaders(nonce?: string): Record<string, string> {
+  const csp = nonce
+    ? `default-src 'self'; img-src 'self' data: https:; style-src 'self' 'nonce-${nonce}'; script-src 'self' 'nonce-${nonce}'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self';`
+    : "default-src 'self'; img-src 'self' data: https:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self';";
   return {
     "x-frame-options": "DENY",
     "x-content-type-options": "nosniff",
     "referrer-policy": "same-origin",
-    "content-security-policy":
-      "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none';",
+    "content-security-policy": csp,
   };
 }
 
@@ -143,6 +127,47 @@ function toHex(buffer: ArrayBuffer): string {
 
 async function sha256(input: string): Promise<string> {
   return toHex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input)));
+}
+
+function fromHex(input: string): Uint8Array {
+  if (!/^[\da-fA-F]+$/.test(input) || input.length % 2 !== 0) {
+    throw new Error("invalid hex");
+  }
+  const bytes = new Uint8Array(input.length / 2);
+  for (let i = 0; i < input.length; i += 2) {
+    bytes[i / 2] = Number.parseInt(input.slice(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function toArrayBuffer(view: Uint8Array): ArrayBuffer {
+  return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength) as ArrayBuffer;
+}
+
+async function pbkdf2Sha256Hex(password: string, saltHex: string, iterations: number): Promise<string> {
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: toArrayBuffer(fromHex(saltHex)),
+      iterations,
+    },
+    keyMaterial,
+    256,
+  );
+  return toHex(bits);
+}
+
+function makeNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return base64UrlEncode(String.fromCharCode(...bytes));
 }
 
 function timingSafeEqual(a: string, b: string): boolean {
@@ -371,14 +396,14 @@ async function requireCsrf(request: Request, session: SessionPayload): Promise<R
   return null;
 }
 
-function renderAdminHtml(): string {
+function renderAdminHtml(nonce: string): string {
   return `<!doctype html>
 <html lang="fi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Voima Lyhty Admin</title>
-  <style>
+  <style nonce="${nonce}">
     :root { color-scheme: light; font-family: system-ui, -apple-system, sans-serif; }
     body { margin: 0; background: #f4efe6; color: #2c241d; }
     .shell { max-width: 1080px; margin: 0 auto; padding: 24px; }
@@ -436,7 +461,7 @@ function renderAdminHtml(): string {
       <div class="alert" id="app-alert"></div>
     </div>
   </div>
-  <script>
+  <script nonce="${nonce}">
     const state = { csrfToken: "", content: null };
     const $ = (id) => document.getElementById(id);
     const loginWrap = $("login");
@@ -614,7 +639,7 @@ function renderAdminHtml(): string {
     };
 
     const renderSettings = () => {
-      $("settings").innerHTML = '<p class="muted">Kirjautuminen käyttää Worker-secrets arvoja ADMIN_USER, ADMIN_PASSWORD_HASH, SESSION_SECRET.</p>';
+      $("settings").innerHTML = '<p class="muted">Kirjautuminen käyttää Worker-secrets arvoja ADMIN_USER, ADMIN_PASSWORD_RECORD (suositus), ADMIN_PASSWORD_HASH (legacy) ja SESSION_SECRET.</p>';
     };
 
     const saveSessions = async () => {
@@ -694,16 +719,41 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
     return json({ error: "locked_try_later" }, { status: 429 });
   }
 
-  if (!env.ADMIN_USER || !env.ADMIN_PASSWORD_HASH || !env.SESSION_SECRET) {
+  if (!env.ADMIN_USER || !env.SESSION_SECRET) {
     return json({ error: "missing_worker_secrets" }, { status: 500 });
   }
 
   const body = (await request.json()) as { username?: string; password?: string };
   const username = String(body.username ?? "").trim();
   const password = String(body.password ?? "");
-  const hashedPassword = await sha256(password);
   const userOk = timingSafeEqual(username, env.ADMIN_USER);
-  const passOk = timingSafeEqual(hashedPassword, env.ADMIN_PASSWORD_HASH);
+
+  const passwordRecord = env.ADMIN_PASSWORD_RECORD;
+  const passwordHash = env.ADMIN_PASSWORD_HASH;
+  if (!passwordRecord && !passwordHash) {
+    return json({ error: "missing_worker_secrets" }, { status: 500 });
+  }
+
+  let passOk = false;
+  if (passwordRecord) {
+    try {
+      const [scheme, hashName, rawIterations, saltHex, expectedHash] = passwordRecord.split("$");
+      if (scheme !== "pbkdf2" || hashName !== "sha256") {
+        throw new Error("unsupported password record");
+      }
+      const iterations = Number.parseInt(rawIterations, 10);
+      if (!Number.isFinite(iterations) || iterations < 100_000) {
+        throw new Error("invalid password record");
+      }
+      const derived = await pbkdf2Sha256Hex(password, saltHex, iterations);
+      passOk = timingSafeEqual(derived, expectedHash);
+    } catch {
+      return json({ error: "invalid_password_record" }, { status: 500 });
+    }
+  } else if (passwordHash) {
+    const hashedPassword = await sha256(password);
+    passOk = timingSafeEqual(hashedPassword, passwordHash);
+  }
 
   if (!userOk || !passOk) {
     const nextAttempts = (rateState.attempts ?? 0) + 1;
@@ -839,11 +889,13 @@ export default {
       if (path === "/admin" && request.method === "GET") {
         const session = await verifySession(request, env);
         if (!session) return Response.redirect(new URL("/admin/login", url), 302);
-        return html(renderAdminHtml(), { status: 200 });
+        const nonce = makeNonce();
+        return html(renderAdminHtml(nonce), nonce, { status: 200 });
       }
 
       if (path === "/admin/login" && request.method === "GET") {
-        return html(renderAdminHtml(), { status: 200 });
+        const nonce = makeNonce();
+        return html(renderAdminHtml(nonce), nonce, { status: 200 });
       }
 
       if (path.startsWith("/api/")) {

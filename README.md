@@ -1,6 +1,6 @@
 # Voima Lyhty
 
-Modern static Astro website for Voima Lyhty, deployed as Cloudflare Workers static assets.
+Modern Astro website for Voima Lyhty, deployed as one Cloudflare Worker that serves both static assets and admin/API routes.
 
 ## Stack
 
@@ -41,6 +41,47 @@ All commands run from the repository root:
 - The site is framework-free at runtime: pages and UI are Astro templates with small inline scripts only where needed.
 - Service content and all calendar sessions live in `src/lib/site-data.ts`.
 - Static images are referenced from `public/` with root-relative URLs.
+- Admin panel and admin APIs are served by Cloudflare Worker routes at `/admin` and `/api/admin/*`.
+- Public runtime overrides are served at `/api/content/public` (KV-backed with static fallback).
+
+## Worker Admin Setup
+
+1. Create KV namespaces:
+   - `npx wrangler kv namespace create CONTENT_KV`
+   - `npx wrangler kv namespace create CONTENT_KV --preview`
+2. Copy the returned IDs into `wrangler.json`:
+   - `kv_namespaces[0].id` = production namespace ID
+   - `kv_namespaces[0].preview_id` = preview namespace ID
+3. Set admin secrets:
+   - `npx wrangler secret put ADMIN_USER`
+   - `npx wrangler secret put ADMIN_PASSWORD_HASH`
+   - `npx wrangler secret put SESSION_SECRET`
+4. Generate the `ADMIN_PASSWORD_HASH` value as SHA-256 hex before step 3:
+   - Node: `node -e "const c=require('crypto'); console.log(c.createHash('sha256').update(process.argv[1]).digest('hex'))" "YOUR_PASSWORD_HERE"`
+   - Use the printed hash value when prompted for `ADMIN_PASSWORD_HASH`.
+5. Generate `SESSION_SECRET` (long random value) before step 3:
+   - Node: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+   - Use the printed value when prompted for `SESSION_SECRET`.
+6. Verify and deploy:
+   - `npm run check`
+   - `npm run deploy`
+7. Open `/admin`:
+   - unauthenticated users are redirected to `/admin/login`
+   - after login, use tabs to manage sessions/services/site text/news scaffold
+
+The Worker now stores editable documents in KV:
+- `content:services:v1`
+- `content:sessions:v1`
+- `content:sitecopy:v1`
+- `content:news:v1`
+
+### Admin Troubleshooting
+
+- `missing_worker_secrets` error: one or more secrets are missing.
+- Login always fails: verify `ADMIN_USER` and `ADMIN_PASSWORD_HASH` values.
+- Content is not updating publicly: confirm `CONTENT_KV` IDs are correct and deployment completed.
+- Local preview mismatch: ensure both `id` and `preview_id` are populated in `wrangler.json`.
+- After rotating `SESSION_SECRET`, all existing admin sessions are invalidated and users must log in again.
 
 ## Editing Calendar Sessions
 

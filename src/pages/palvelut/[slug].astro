@@ -26,7 +26,7 @@ const next = services[(idx + 1) % services.length];
   description={service.short}
   ogImage={service.image}
 >
-  <article>
+  <article data-service-page={service.slug}>
     <section class="relative min-h-[62svh] overflow-hidden bg-ink pt-32 text-sand" data-theme="dark">
       <div class="absolute inset-0">
         <Image src={service.image} alt="" width={1024} height={1024} class="h-full w-full object-cover animate-slow-zoom" />
@@ -34,13 +34,13 @@ const next = services[(idx + 1) % services.length];
       </div>
       <div class="relative mx-auto flex min-h-[62svh] max-w-7xl flex-col justify-end px-6 pb-14 md:px-10">
         <Reveal>
-          <span class="font-display text-4xl italic text-sun">{service.number}</span>
+          <span class="font-display text-4xl italic text-sun" data-service-field="number">{service.number}</span>
         </Reveal>
         <Reveal delay={0.1}>
-          <h1 class="display-md mt-5 max-w-4xl font-display italic text-sand">{service.name}</h1>
+          <h1 class="display-md mt-5 max-w-4xl font-display italic text-sand" data-service-field="name">{service.name}</h1>
         </Reveal>
         <Reveal delay={0.18}>
-          <p class="mt-6 max-w-2xl font-display text-3xl italic leading-tight text-sun">{service.tagline}</p>
+          <p class="mt-6 max-w-2xl font-display text-3xl italic leading-tight text-sun" data-service-field="tagline">{service.tagline}</p>
         </Reveal>
       </div>
     </section>
@@ -49,8 +49,8 @@ const next = services[(idx + 1) % services.length];
       <div class="mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-12 md:px-10">
         <div class="md:col-span-8">
           <Reveal>
-            <div class="space-y-6 text-lg leading-relaxed text-driftwood/78">
-              {service.body.map((paragraph) => <p>{paragraph}</p>)}
+            <div class="space-y-6 text-lg leading-relaxed text-driftwood/78" data-service-body>
+              {service.body.map((paragraph) => <p data-service-paragraph>{paragraph}</p>)}
             </div>
           </Reveal>
 
@@ -58,11 +58,11 @@ const next = services[(idx + 1) % services.length];
             <div class="mt-12 grid gap-4 sm:grid-cols-2">
               <div class="glass-panel rounded-[1.5rem] p-7">
                 <div class="eyebrow text-driftwood/45">Kesto</div>
-                <div class="mt-3 font-display text-4xl italic text-driftwood">{service.duration}</div>
+                <div class="mt-3 font-display text-4xl italic text-driftwood" data-service-field="duration">{service.duration}</div>
               </div>
               <div class="glass-panel rounded-[1.5rem] p-7">
                 <div class="eyebrow text-driftwood/45">Hinta</div>
-                <div class="mt-3 font-display text-4xl italic text-driftwood">{service.price}</div>
+                <div class="mt-3 font-display text-4xl italic text-driftwood" data-service-field="price">{service.price}</div>
               </div>
             </div>
           </Reveal>
@@ -110,3 +110,36 @@ const next = services[(idx + 1) % services.length];
     </section>
   </article>
 </BaseLayout>
+
+<script>
+  async function syncServiceDetail() {
+    const root = document.querySelector<HTMLElement>("[data-service-page]");
+    if (!root) return;
+    const slug = root.dataset.servicePage;
+    if (!slug) return;
+    try {
+      const response = await fetch("/api/content/public", { headers: { accept: "application/json" } });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (!Array.isArray(payload?.services)) return;
+      const service = payload.services.find((item: any) => item.slug === slug);
+      if (!service) return;
+      root.querySelector<HTMLElement>('[data-service-field="number"]')?.replaceChildren(service.number || "");
+      root.querySelector<HTMLElement>('[data-service-field="name"]')?.replaceChildren(service.name || "");
+      root.querySelector<HTMLElement>('[data-service-field="tagline"]')?.replaceChildren(service.tagline || "");
+      root.querySelector<HTMLElement>('[data-service-field="duration"]')?.replaceChildren(service.duration || "");
+      root.querySelector<HTMLElement>('[data-service-field="price"]')?.replaceChildren(service.price || "");
+      const body = root.querySelector<HTMLElement>("[data-service-body]");
+      if (body && Array.isArray(service.body) && service.body.length > 0) {
+        body.innerHTML = service.body
+          .map((paragraph: string) => `<p data-service-paragraph>${paragraph}</p>`)
+          .join("");
+      }
+    } catch {
+      // Keep static fallback content on any runtime fetch issue.
+    }
+  }
+
+  syncServiceDetail();
+  document.addEventListener("astro:after-swap", syncServiceDetail);
+</script>

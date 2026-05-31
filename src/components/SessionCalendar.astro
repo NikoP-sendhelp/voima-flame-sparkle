@@ -6,6 +6,7 @@ type Props = {
   serviceSlug?: ServiceSlug;
   title?: string;
   emptyMessage?: string;
+  publicSource?: string;
 };
 
 const {
@@ -13,6 +14,7 @@ const {
   serviceSlug,
   title = serviceSlug ? "Tulevat ja menneet sessiot" : "Sessiokalenteri",
   emptyMessage = "Ei aikataulutettuja sessioita juuri nyt. Uudet ajat lisätään tänne heti, kun ne varmistuvat.",
+  publicSource = "/api/content/public",
 } = Astro.props;
 
 const scopedEvents = serviceSlug
@@ -36,6 +38,18 @@ const serviceMeta = Object.fromEntries(
     },
   ]),
 );
+const serviceMetaSeed = services.map((service, index) => ({
+  slug: service.slug,
+  name: service.name,
+  color: [
+    "#be5736",
+    "#d89245",
+    "#6f936b",
+    "#8d6a4f",
+    "#b96f76",
+    "#6c7f9d",
+  ][index],
+}));
 
 const calendarId = `session-calendar-${serviceSlug ?? "all"}-${Math.random().toString(36).slice(2)}`;
 const calendarData = scopedEvents
@@ -57,6 +71,9 @@ const calendarData = scopedEvents
   id={calendarId}
   class="rounded-[1.75rem] border border-driftwood/10 bg-cream p-4 text-driftwood shadow-[0_1.5rem_4rem_oklch(0.176_0.026_58_/_0.08)] md:p-6"
   data-session-calendar
+  data-service-slug={serviceSlug ?? ""}
+  data-empty-message={emptyMessage}
+  data-public-source={publicSource}
 >
   <div class="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
     <div>
@@ -85,46 +102,41 @@ const calendarData = scopedEvents
     </div>
   </div>
 
-  {
-    calendarData.length > 0 ? (
-      <>
-        <div class="mt-6 flex flex-wrap gap-2" data-calendar-legend></div>
+  <div class="mt-6 flex flex-wrap gap-2" data-calendar-legend></div>
 
-        <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <div class="rounded-[1.25rem] border border-driftwood/10 bg-sand/70 p-3 md:p-4">
-            <div class="mb-4 flex items-center justify-between gap-4">
-              <h3 class="font-display text-3xl italic text-driftwood" data-calendar-heading></h3>
-              <span class="text-[0.68rem] font-semibold uppercase tracking-luxe text-driftwood/45">
-                Ma-Su
-              </span>
-            </div>
-            <div class="grid grid-cols-7 gap-1 text-center text-[0.65rem] font-semibold uppercase tracking-luxe text-driftwood/45">
-              {["Ma", "Ti", "Ke", "To", "Pe", "La", "Su"].map((day) => (
-                <div class="py-2">{day}</div>
-              ))}
-            </div>
-            <div class="mt-1 grid grid-cols-7 gap-1" data-calendar-grid></div>
-          </div>
-
-          <aside class="rounded-[1.25rem] bg-driftwood p-5 text-sand">
-            <span class="eyebrow text-sun">Valittu päivä</span>
-            <div class="mt-4 space-y-3" data-calendar-details></div>
-          </aside>
-        </div>
-
-        <div class="mt-6 grid gap-4 md:grid-cols-2" data-calendar-lists></div>
-      </>
-    ) : (
-      <div class="mt-6 rounded-[1.25rem] border border-driftwood/10 bg-sand/70 p-6">
-        <p class="font-display text-2xl italic text-driftwood">{emptyMessage}</p>
-        <a href="/yhteys" class="btn-secondary mt-6 border-driftwood/25 text-driftwood hover:bg-driftwood hover:text-sand">
-          Kysy seuraavaa aikaa
-        </a>
+  <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]" data-calendar-main>
+    <div class="rounded-[1.25rem] border border-driftwood/10 bg-sand/70 p-3 md:p-4">
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <h3 class="font-display text-3xl italic text-driftwood" data-calendar-heading></h3>
+        <span class="text-[0.68rem] font-semibold uppercase tracking-luxe text-driftwood/45">
+          Ma-Su
+        </span>
       </div>
-    )
-  }
+      <div class="grid grid-cols-7 gap-1 text-center text-[0.65rem] font-semibold uppercase tracking-luxe text-driftwood/45">
+        {["Ma", "Ti", "Ke", "To", "Pe", "La", "Su"].map((day) => (
+          <div class="py-2">{day}</div>
+        ))}
+      </div>
+      <div class="mt-1 grid grid-cols-7 gap-1" data-calendar-grid></div>
+    </div>
+
+    <aside class="rounded-[1.25rem] bg-driftwood p-5 text-sand">
+      <span class="eyebrow text-sun">Valittu päivä</span>
+      <div class="mt-4 space-y-3" data-calendar-details></div>
+    </aside>
+  </div>
+
+  <div class="mt-6 grid gap-4 md:grid-cols-2" data-calendar-lists></div>
+
+  <div class="mt-6 rounded-[1.25rem] border border-driftwood/10 bg-sand/70 p-6 hidden" data-calendar-empty>
+    <p class="font-display text-2xl italic text-driftwood" data-calendar-empty-text>{emptyMessage}</p>
+    <a href="/yhteys" class="btn-secondary mt-6 border-driftwood/25 text-driftwood hover:bg-driftwood hover:text-sand">
+      Kysy seuraavaa aikaa
+    </a>
+  </div>
 
   <script type="application/json" data-calendar-data set:html={JSON.stringify(calendarData)} />
+  <script type="application/json" data-service-meta set:html={JSON.stringify(serviceMetaSeed)} />
 </section>
 
 <script>
@@ -150,22 +162,100 @@ const calendarData = scopedEvents
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   }
 
-  function setupCalendar(root: HTMLElement) {
+  async function loadPublicContent(source: string): Promise<any | null> {
+    const cacheKey = "__vlPublicContentCache";
+    const globalObj = window as unknown as Record<string, any>;
+    if (globalObj[cacheKey]) return globalObj[cacheKey];
+    try {
+      const response = await fetch(source, {
+        headers: { accept: "application/json" },
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      globalObj[cacheKey] = data;
+      return data;
+    } catch {
+      return null;
+    }
+  }
+
+  function decorateEvents(events: any[], serviceMap: Map<string, any>) {
+    return events
+      .map((event: any) => {
+        const service = serviceMap.get(event.serviceSlug);
+        return {
+          ...event,
+          serviceName: service?.name ?? event.title,
+          serviceUrl: service ? `/palvelut/${service.slug}` : "/palvelut",
+          color: service?.color ?? "#be5736",
+          bookingUrl: event.bookingUrl ?? "",
+        };
+      })
+      .sort((a: any, b: any) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`));
+  }
+
+  async function setupCalendar(root: HTMLElement) {
     if (root.dataset.calendarReady === "true") return;
     root.dataset.calendarReady = "true";
 
     const data = root.querySelector<HTMLScriptElement>("[data-calendar-data]");
-    const events = data ? JSON.parse(data.textContent || "[]") : [];
-    if (!events.length) return;
+    const seedEvents = data ? JSON.parse(data.textContent || "[]") : [];
+    const source = root.dataset.publicSource || "/api/content/public";
+    const scopedSlug = root.dataset.serviceSlug || "";
+    const meta = root.querySelector<HTMLScriptElement>("[data-service-meta]");
+    const serviceMetaSeed = meta ? JSON.parse(meta.textContent || "[]") : [];
+    const serviceMap = new Map(serviceMetaSeed.map((service: any) => [service.slug, service]));
+
+    let events = seedEvents;
+    const runtimeContent = await loadPublicContent(source);
+    if (runtimeContent?.services?.length) {
+      for (const service of runtimeContent.services) {
+        if (service?.slug && service?.name) {
+          if (serviceMap.has(service.slug)) {
+            serviceMap.set(service.slug, {
+              ...serviceMap.get(service.slug),
+              name: service.name,
+            });
+          } else {
+            serviceMap.set(service.slug, {
+              slug: service.slug,
+              name: service.name,
+              color: "#be5736",
+            });
+          }
+        }
+      }
+    }
+    if (Array.isArray(runtimeContent?.sessions)) {
+      const filtered = scopedSlug
+        ? runtimeContent.sessions.filter((event: any) => event.serviceSlug === scopedSlug)
+        : runtimeContent.sessions;
+      events = decorateEvents(filtered, serviceMap);
+    }
 
     const grid = root.querySelector<HTMLElement>("[data-calendar-grid]");
     const heading = root.querySelector<HTMLElement>("[data-calendar-heading]");
     const details = root.querySelector<HTMLElement>("[data-calendar-details]");
     const lists = root.querySelector<HTMLElement>("[data-calendar-lists]");
     const legend = root.querySelector<HTMLElement>("[data-calendar-legend]");
+    const main = root.querySelector<HTMLElement>("[data-calendar-main]");
+    const empty = root.querySelector<HTMLElement>("[data-calendar-empty]");
+    const emptyText = root.querySelector<HTMLElement>("[data-calendar-empty-text]");
     const prev = root.querySelector<HTMLButtonElement>("[data-calendar-prev]");
     const next = root.querySelector<HTMLButtonElement>("[data-calendar-next]");
-    if (!grid || !heading || !details || !lists || !legend || !prev || !next) return;
+    if (!grid || !heading || !details || !lists || !legend || !prev || !next || !main || !empty || !emptyText) return;
+    if (!events.length) {
+      main.classList.add("hidden");
+      lists.classList.add("hidden");
+      legend.classList.add("hidden");
+      emptyText.textContent = root.dataset.emptyMessage ?? emptyText.textContent;
+      empty.classList.remove("hidden");
+      return;
+    }
+    main.classList.remove("hidden");
+    lists.classList.remove("hidden");
+    legend.classList.remove("hidden");
+    empty.classList.add("hidden");
 
     const today = todayKey();
     const upcoming = events.find((event: any) => event.date >= today);

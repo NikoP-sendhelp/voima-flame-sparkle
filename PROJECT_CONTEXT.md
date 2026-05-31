@@ -14,7 +14,7 @@ The current implementation is a static Astro site. It does not use React, TanSta
 - Tailwind CSS 4, configured directly in `src/styles/global.css` with CSS-first `@theme inline`.
 - Fonts from `@fontsource/cormorant-garamond` and `@fontsource/karla`.
 - `@astrojs/sitemap` integration.
-- Cloudflare Wrangler for static asset preview, dry-run deploys, and deploys.
+- Cloudflare Wrangler for Worker + static-asset preview, dry-run deploys, and deploys.
 - TypeScript strict config via `astro/tsconfigs/strict`.
 
 Primary package files:
@@ -50,13 +50,13 @@ Astro configuration lives in `astro.config.mjs`:
 Wrangler configuration lives in `wrangler.json`:
 
 - Worker name is `voima-flame-sparkle`.
+- Worker main entrypoint is `src/worker.ts`.
 - Static assets are served from `./dist`.
 - `not_found_handling` is `404-page`.
+- KV namespace binding `CONTENT_KV` stores editable admin content documents.
 - Observability is enabled.
 
-The active Wrangler config is assets-only. It does not define a `main` Worker entrypoint.
-
-There is no generated Worker type file in the active project. `src/env.d.ts` only references Astro client types because the site is static and does not use a Cloudflare adapter or server-side Astro runtime.
+The active Wrangler config now serves both Worker routes and static assets in one deployment.
 
 ## Source Tree
 
@@ -84,6 +84,7 @@ src/
   styles/
     global.css
   env.d.ts
+  worker.ts
 ```
 
 Static assets live in `public/` and are referenced with root-relative URLs such as `/hero-bowl.jpg`.
@@ -145,8 +146,17 @@ Notable public assets:
 - Renders an interactive, Astro-native calendar for service sessions.
 - Accepts `events`, optional `serviceSlug`, optional `title`, and optional `emptyMessage`.
 - Uses local inline JavaScript for month navigation, day selection, event details, and upcoming/past lists.
+- Can fetch runtime session/service overrides from `/api/content/public` to reflect admin updates without rebuild.
 - Does not use React or client-side framework islands.
 - Can render a global all-services calendar or a filtered service-specific calendar.
+
+`src/worker.ts`:
+
+- Serves `/admin` and `/admin/login` panel UI.
+- Serves admin APIs under `/api/admin/*` for login/logout and KV-backed content updates.
+- Serves public runtime content endpoint at `/api/content/public`.
+- Uses signed HttpOnly cookie sessions, CSRF checks for mutating APIs, and KV-based login rate limiting.
+- Falls back to static `site-data.ts` seed values when KV documents do not exist yet.
 
 ## Data Model
 

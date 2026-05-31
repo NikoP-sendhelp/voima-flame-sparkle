@@ -106,21 +106,21 @@ const featured = services.slice(0, 3);
         </div>
       </Reveal>
 
-      <div class="grid gap-5 md:grid-cols-3">
+      <div class="grid gap-5 md:grid-cols-3" data-home-services>
         {
           featured.map((s, i) => (
             <Reveal delay={i * 0.1}>
-              <a href={`/palvelut/${s.slug}`} class="group block rounded-[1.5rem] bg-cream p-3 shadow-[0_1.5rem_4rem_oklch(0.176_0.026_58_/_0.08)] transition duration-500 hover:-translate-y-1.5">
+              <a href={`/palvelut/${s.slug}`} class="group block rounded-[1.5rem] bg-cream p-3 shadow-[0_1.5rem_4rem_oklch(0.176_0.026_58_/_0.08)] transition duration-500 hover:-translate-y-1.5" data-home-service={s.slug}>
                 <div class="media-frame aspect-[16/11] rounded-[1.1rem]">
                   <Image src={s.image} alt={s.name} width={1024} height={1024} loading="lazy" />
                 </div>
                 <div class="p-4">
                   <div class="flex items-center gap-3">
-                    <span class="font-display text-sm italic text-ember">{s.number}</span>
+                    <span class="font-display text-sm italic text-ember" data-service-field="number">{s.number}</span>
                     <span class="h-px flex-1 bg-driftwood/12"></span>
                   </div>
-                  <h3 class="mt-3 font-display text-2xl italic text-driftwood">{s.name}</h3>
-                  <p class="mt-3 text-sm leading-relaxed text-driftwood/66">{s.short}</p>
+                  <h3 class="mt-3 font-display text-2xl italic text-driftwood" data-service-field="name">{s.name}</h3>
+                  <p class="mt-3 text-sm leading-relaxed text-driftwood/66" data-service-field="short">{s.short}</p>
                   <span class="hover-link mt-5 text-ember">Lue lisää</span>
                 </div>
               </a>
@@ -230,3 +230,31 @@ const featured = services.slice(0, 3);
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  async function syncHomeServices() {
+    const root = document.querySelector<HTMLElement>("[data-home-services]");
+    if (!root) return;
+    try {
+      const response = await fetch("/api/content/public", { headers: { accept: "application/json" } });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (!Array.isArray(payload?.services)) return;
+      const serviceMap = new Map(payload.services.map((service: any) => [service.slug, service]));
+      root.querySelectorAll<HTMLElement>("[data-home-service]").forEach((card) => {
+        const slug = card.dataset.homeService;
+        if (!slug) return;
+        const service = serviceMap.get(slug);
+        if (!service) return;
+        card.querySelector<HTMLElement>('[data-service-field="number"]')?.replaceChildren(service.number);
+        card.querySelector<HTMLElement>('[data-service-field="name"]')?.replaceChildren(service.name);
+        card.querySelector<HTMLElement>('[data-service-field="short"]')?.replaceChildren(service.short);
+      });
+    } catch {
+      // Keep static fallback content on any runtime fetch issue.
+    }
+  }
+
+  syncHomeServices();
+  document.addEventListener("astro:after-swap", syncHomeServices);
+</script>

@@ -125,9 +125,15 @@ function toHex(buffer: ArrayBuffer): string {
   return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function sha256(input: string): Promise<string> {
-  return toHex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input)));
-}
+type PasswordRecord = {
+  iterations: number;
+  saltHex: string;
+  hashHex: string;
+};
+
+type PasswordRecordParseResult =
+  | { ok: true; value: PasswordRecord }
+  | { ok: false; reason: "missing" | "control_chars" | "shape" | "algorithm" | "iterations" | "salt" | "hash" };
 
 function fromHex(input: string): Uint8Array {
   if (!/^[\da-fA-F]+$/.test(input) || input.length % 2 !== 0) {
@@ -142,6 +148,46 @@ function fromHex(input: string): Uint8Array {
 
 function toArrayBuffer(view: Uint8Array): ArrayBuffer {
   return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength) as ArrayBuffer;
+}
+
+function normalizePasswordRecord(raw: string | undefined): PasswordRecordParseResult {
+  if (!raw) return { ok: false, reason: "missing" };
+  let normalized = raw.trim();
+  if (
+    (normalized.startsWith('"') && normalized.endsWith('"')) ||
+    (normalized.startsWith("'") && normalized.endsWith("'"))
+  ) {
+    normalized = normalized.slice(1, -1).trim();
+  }
+  if (/[\u0000-\u001f\u007f]/.test(normalized)) {
+    return { ok: false, reason: "control_chars" };
+  }
+
+  const parts = normalized.split("$");
+  if (parts.length !== 5) return { ok: false, reason: "shape" };
+  const [scheme, hashName, rawIterations, saltHexRaw, hashHexRaw] = parts;
+  if (scheme !== "pbkdf2" || hashName !== "sha256") {
+    return { ok: false, reason: "algorithm" };
+  }
+
+  const iterations = Number.parseInt(rawIterations, 10);
+  if (!Number.isFinite(iterations) || iterations < 100_000 || iterations > 1_000_000) {
+    return { ok: false, reason: "iterations" };
+  }
+
+  const saltHex = saltHexRaw.toLowerCase();
+  const hashHex = hashHexRaw.toLowerCase();
+  if (!/^[\da-f]{32}$/.test(saltHex)) return { ok: false, reason: "salt" };
+  if (!/^[\da-f]{64}$/.test(hashHex)) return { ok: false, reason: "hash" };
+
+  return {
+    ok: true,
+    value: {
+      iterations,
+      saltHex,
+      hashHex,
+    },
+  };
 }
 
 async function pbkdf2Sha256Hex(password: string, saltHex: string, iterations: number): Promise<string> {
@@ -396,6 +442,252 @@ async function requireCsrf(request: Request, session: SessionPayload): Promise<R
   return null;
 }
 
+function renderAdminLoginHtml(nonce: string): string {
+  return `<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Voima Lyhty Admin - Kirjaudu</title>
+  <style nonce="${nonce}">
+    :root {
+      color-scheme: light;
+      font-family: "Karla", ui-sans-serif, system-ui, sans-serif;
+      --bg-1: #f4efe6;
+      --bg-2: #fbf7f0;
+      --panel: #fffdf8;
+      --ink: #2c241d;
+      --muted: #6f6658;
+      --line: #e3d8c7;
+      --accent: #e59243;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 14%, rgba(229,146,67,.24), transparent 28rem),
+        linear-gradient(145deg, var(--bg-2), var(--bg-1));
+    }
+    .login-shell { width: min(100%, 980px); }
+    .login-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 1.4rem 3.4rem rgba(23,18,14,.10);
+      background: var(--panel);
+    }
+    .brand {
+      padding: 38px 30px 28px;
+      background:
+        radial-gradient(circle at 85% 8%, rgba(229,146,67,.25), transparent 18rem),
+        linear-gradient(155deg, #2b241e, #35291f 60%, #6d3f20);
+      color: #f8f0e4;
+      border-bottom: 1px solid rgba(248,240,228,.2);
+    }
+    .brand h1 {
+      margin: 0;
+      font-family: "Cormorant Garamond", ui-serif, Georgia, serif;
+      font-size: clamp(2rem, 4vw, 3.1rem);
+      font-style: italic;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+    .brand p {
+      margin: 12px 0 0;
+      max-width: 42ch;
+      font-size: .94rem;
+      line-height: 1.55;
+      color: rgba(248,240,228,.84);
+    }
+    .panel { padding: 30px; }
+    .eyebrow {
+      margin: 0;
+      font-size: .67rem;
+      text-transform: uppercase;
+      letter-spacing: .13em;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    h2 {
+      margin: 10px 0 0;
+      font-family: "Cormorant Garamond", ui-serif, Georgia, serif;
+      font-size: 2rem;
+      font-style: italic;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+    .help {
+      margin: 12px 0 22px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: .94rem;
+    }
+    .field { margin-bottom: 14px; }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: .67rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 700;
+      color: #4f4436;
+    }
+    input {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid #d9ccb7;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+      transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+    input:focus-visible {
+      outline: none;
+      border-color: #c7722d;
+      box-shadow: 0 0 0 3px rgba(229,146,67,.24);
+    }
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      min-height: 44px;
+      padding: 10px 18px;
+      font-size: .7rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--accent);
+      color: #22140a;
+      transition: transform .16s ease, filter .16s ease, opacity .16s ease;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.02); }
+    button:disabled {
+      opacity: .62;
+      cursor: progress;
+      transform: none;
+      filter: none;
+    }
+    .status {
+      min-height: 24px;
+      margin-top: 14px;
+      font-size: .9rem;
+      line-height: 1.4;
+    }
+    .status.error { color: #9f2f1f; }
+    .status.ok { color: #27653c; }
+    @media (min-width: 860px) {
+      .login-grid { grid-template-columns: minmax(280px, 1fr) minmax(380px, 1fr); }
+      .brand { min-height: 100%; border-bottom: 0; border-right: 1px solid rgba(248,240,228,.2); }
+      .panel { padding: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="login-shell">
+    <section class="login-grid">
+      <div class="brand">
+        <h1>Voima Lyhty</h1>
+        <p>
+          Hallinnoi sessioita, palveluiden sisältöjä ja sivuston tekstejä turvallisesti
+          yhdestä näkymästä.
+        </p>
+      </div>
+      <div class="panel">
+        <p class="eyebrow">Ylläpito</p>
+        <h2>Kirjaudu sisään</h2>
+        <p class="help">Kirjaudu ylläpitonäkymään käyttäjätunnuksella ja salasanalla.</p>
+        <form id="login-form" novalidate>
+          <div class="field">
+            <label for="login-user">Käyttäjätunnus</label>
+            <input id="login-user" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="login-pass">Salasana</label>
+            <input id="login-pass" type="password" autocomplete="current-password" required />
+          </div>
+          <div class="actions">
+            <button id="login-btn" type="submit">Kirjaudu</button>
+          </div>
+          <div id="login-status" class="status" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script nonce="${nonce}">
+    const form = document.getElementById("login-form");
+    const button = document.getElementById("login-btn");
+    const status = document.getElementById("login-status");
+    const userInput = document.getElementById("login-user");
+    const passInput = document.getElementById("login-pass");
+    const setupMessages = {
+      missing_worker_secrets: "Ylläpidon asetukset puuttuvat. Lisää ADMIN_USER, ADMIN_PASSWORD_RECORD ja SESSION_SECRET.",
+      invalid_password_record: "ADMIN_PASSWORD_RECORD on virheellisessä muodossa. Luo uusi arvo ja liitä se ilman lainausmerkkejä.",
+      locked_try_later: "Liian monta yritystä. Odota hetki ja yritä uudelleen.",
+    };
+
+    function setStatus(message, kind = "error") {
+      status.textContent = message;
+      status.className = "status " + (kind === "ok" ? "ok" : "error");
+    }
+
+    async function login(event) {
+      event.preventDefault();
+      const username = userInput.value.trim();
+      const password = passInput.value;
+      if (!username || !password) {
+        setStatus("Täytä käyttäjätunnus ja salasana.");
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Kirjaudutaan...";
+      setStatus("", "ok");
+      try {
+        const response = await fetch("/api/admin/auth/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ username, password }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = setupMessages[payload.error] || "Kirjautuminen epäonnistui. Tarkista tunnukset.";
+          setStatus(message);
+          return;
+        }
+        setStatus("Kirjautuminen onnistui. Siirrytään ylläpitoon...", "ok");
+        window.location.assign("/admin");
+      } catch {
+        setStatus("Yhteysvirhe. Yritä hetken päästä uudelleen.");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Kirjaudu";
+      }
+    }
+
+    form.addEventListener("submit", login);
+    userInput.focus();
+  </script>
+</body>
+</html>`;
+}
+
 function renderAdminHtml(nonce: string): string {
   return `<!doctype html>
 <html lang="fi">
@@ -433,25 +725,16 @@ function renderAdminHtml(nonce: string): string {
   <div class="shell">
     <h1>Voima Lyhty Admin</h1>
     <p class="muted">Muokkaa sessioita ja palvelusisältöä turvallisesti yhdessä paikassa.</p>
-    <div id="login" class="panel">
-      <h2>Kirjaudu sisään</h2>
-      <div class="row cols-2">
-        <div><label>Käyttäjä</label><input id="login-user" autocomplete="username" /></div>
-        <div><label>Salasana</label><input id="login-pass" type="password" autocomplete="current-password" /></div>
-      </div>
-      <button class="primary" id="login-btn">Kirjaudu</button>
-      <div class="alert" id="login-alert"></div>
-    </div>
-    <div id="app" class="panel hidden">
+    <div id="app" class="panel">
       <div class="line">
         <div class="tabs">
-          <button class="tab active" data-tab="sessions">Sessions</button>
-          <button class="tab" data-tab="services">Services</button>
-          <button class="tab" data-tab="sitecopy">Site Text</button>
-          <button class="tab" data-tab="news">News (Scaffold)</button>
-          <button class="tab" data-tab="settings">Settings</button>
+          <button class="tab active" data-tab="sessions">Sessiot</button>
+          <button class="tab" data-tab="services">Palvelut</button>
+          <button class="tab" data-tab="sitecopy">Sivutekstit</button>
+          <button class="tab" data-tab="news">Uutiset (pohja)</button>
+          <button class="tab" data-tab="settings">Asetukset</button>
         </div>
-        <button id="logout-btn">Logout</button>
+        <button id="logout-btn">Kirjaudu ulos</button>
       </div>
       <div id="sessions" class="tab-panel"></div>
       <div id="services" class="tab-panel hidden"></div>
@@ -464,9 +747,6 @@ function renderAdminHtml(nonce: string): string {
   <script nonce="${nonce}">
     const state = { csrfToken: "", content: null };
     const $ = (id) => document.getElementById(id);
-    const loginWrap = $("login");
-    const appWrap = $("app");
-    const loginAlert = $("login-alert");
     const appAlert = $("app-alert");
 
     const request = async (url, options = {}) => {
@@ -515,7 +795,7 @@ function renderAdminHtml(nonce: string): string {
         <div class="row">
           <div><label>Summary</label><textarea id="new-session-summary"></textarea></div>
         </div>
-        <button class="primary" id="add-session">Add session</button>
+        <button class="primary" id="add-session">Lisää sessio</button>
       \`;
       document.querySelectorAll('[data-action="delete-session"]').forEach((button) => {
         button.addEventListener("click", async () => {
@@ -573,8 +853,8 @@ function renderAdminHtml(nonce: string): string {
           <div><label>Duration</label><input id="new-service-duration" placeholder="60 min" /></div>
           <div><label>Image path</label><input id="new-service-image" placeholder="/service-uusi.jpg" /></div>
         </div>
-        <button class="primary" id="add-service">Add service</button>
-        <button id="save-services">Save service changes</button>
+        <button class="primary" id="add-service">Lisää palvelu</button>
+        <button id="save-services">Tallenna palvelumuutokset</button>
       \`;
       $("add-service").addEventListener("click", async () => {
         const slug = $("new-service-slug").value.trim();
@@ -619,7 +899,7 @@ function renderAdminHtml(nonce: string): string {
               </div>
             </div>\`).join("")}
         </div>
-        <button id="save-sitecopy">Save Site Text</button>
+        <button id="save-sitecopy">Tallenna sivutekstit</button>
       \`;
       $("save-sitecopy").addEventListener("click", async () => {
         state.content.siteCopy.data = state.content.siteCopy.data.map((item, i) => {
@@ -630,16 +910,16 @@ function renderAdminHtml(nonce: string): string {
         const payload = { items: state.content.siteCopy.data };
         const res = await request("/api/admin/sitecopy", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
         state.content.siteCopy = res.siteCopy;
-        showAlert(appAlert, "Site text saved.");
+        showAlert(appAlert, "Sivutekstit tallennettu.");
       });
     };
 
     const renderNews = () => {
-      $("news").innerHTML = '<p class="muted">News scaffold is active. Public news page is intentionally disabled in v1.</p>';
+      $("news").innerHTML = '<p class="muted">Uutisten tietomalli on käytössä, mutta julkinen uutisnäkymä on v1-vaiheessa pois päältä.</p>';
     };
 
     const renderSettings = () => {
-      $("settings").innerHTML = '<p class="muted">Kirjautuminen käyttää Worker-secrets arvoja ADMIN_USER, ADMIN_PASSWORD_RECORD (suositus), ADMIN_PASSWORD_HASH (legacy) ja SESSION_SECRET.</p>';
+      $("settings").innerHTML = '<p class="muted">Kirjautuminen käyttää Worker-secrets arvoja ADMIN_USER, ADMIN_PASSWORD_RECORD ja SESSION_SECRET.</p>';
     };
 
     const saveSessions = async () => {
@@ -647,7 +927,7 @@ function renderAdminHtml(nonce: string): string {
       const res = await request("/api/admin/sessions", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       state.content.sessions = res.sessions;
       renderSessions();
-      showAlert(appAlert, "Sessions saved.");
+      showAlert(appAlert, "Sessiot tallennettu.");
     };
 
     const saveServices = async () => {
@@ -656,7 +936,7 @@ function renderAdminHtml(nonce: string): string {
       state.content.services = res.services;
       renderServices();
       renderSessions();
-      showAlert(appAlert, "Services saved.");
+      showAlert(appAlert, "Palvelut tallennettu.");
     };
 
     const renderApp = () => {
@@ -671,28 +951,12 @@ function renderAdminHtml(nonce: string): string {
       const data = await request("/api/admin/content");
       state.csrfToken = data.csrfToken;
       state.content = data.content;
-      loginWrap.classList.add("hidden");
-      appWrap.classList.remove("hidden");
       renderApp();
     };
 
-    $("login-btn").addEventListener("click", async () => {
-      try {
-        await request("/api/admin/auth/login", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ username: $("login-user").value, password: $("login-pass").value }),
-        });
-        showAlert(loginAlert, "Kirjautuminen onnistui.");
-        await loadContent();
-      } catch (error) {
-        showAlert(loginAlert, error.message, true);
-      }
-    });
-
     $("logout-btn").addEventListener("click", async () => {
       await request("/api/admin/auth/logout", { method: "POST" });
-      location.reload();
+      window.location.assign("/admin/login");
     });
 
     document.querySelectorAll("[data-tab]").forEach((button) => {
@@ -705,7 +969,9 @@ function renderAdminHtml(nonce: string): string {
       });
     });
 
-    loadContent().catch(() => {});
+    loadContent().catch(() => {
+      window.location.assign("/admin/login");
+    });
   </script>
 </body>
 </html>`;
@@ -719,7 +985,13 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
     return json({ error: "locked_try_later" }, { status: 429 });
   }
 
-  if (!env.ADMIN_USER || !env.SESSION_SECRET) {
+  if (!env.ADMIN_USER || !env.SESSION_SECRET || !env.ADMIN_PASSWORD_RECORD) {
+    console.error(
+      JSON.stringify({
+        event: "admin_auth_setup_error",
+        error: "missing_worker_secrets",
+      }),
+    );
     return json({ error: "missing_worker_secrets" }, { status: 500 });
   }
 
@@ -728,32 +1000,23 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
   const password = String(body.password ?? "");
   const userOk = timingSafeEqual(username, env.ADMIN_USER);
 
-  const passwordRecord = env.ADMIN_PASSWORD_RECORD;
-  const passwordHash = env.ADMIN_PASSWORD_HASH;
-  if (!passwordRecord && !passwordHash) {
-    return json({ error: "missing_worker_secrets" }, { status: 500 });
+  const parsedRecord = normalizePasswordRecord(env.ADMIN_PASSWORD_RECORD);
+  if (!parsedRecord.ok) {
+    console.error(
+      JSON.stringify({
+        event: "admin_auth_setup_error",
+        error: "invalid_password_record",
+        reason: parsedRecord.reason,
+      }),
+    );
+    return json({ error: "invalid_password_record" }, { status: 500 });
   }
-
-  let passOk = false;
-  if (passwordRecord) {
-    try {
-      const [scheme, hashName, rawIterations, saltHex, expectedHash] = passwordRecord.split("$");
-      if (scheme !== "pbkdf2" || hashName !== "sha256") {
-        throw new Error("unsupported password record");
-      }
-      const iterations = Number.parseInt(rawIterations, 10);
-      if (!Number.isFinite(iterations) || iterations < 100_000) {
-        throw new Error("invalid password record");
-      }
-      const derived = await pbkdf2Sha256Hex(password, saltHex, iterations);
-      passOk = timingSafeEqual(derived, expectedHash);
-    } catch {
-      return json({ error: "invalid_password_record" }, { status: 500 });
-    }
-  } else if (passwordHash) {
-    const hashedPassword = await sha256(password);
-    passOk = timingSafeEqual(hashedPassword, passwordHash);
-  }
+  const derived = await pbkdf2Sha256Hex(
+    password,
+    parsedRecord.value.saltHex,
+    parsedRecord.value.iterations,
+  );
+  const passOk = timingSafeEqual(derived, parsedRecord.value.hashHex);
 
   if (!userOk || !passOk) {
     const nextAttempts = (rateState.attempts ?? 0) + 1;
@@ -894,8 +1157,10 @@ export default {
       }
 
       if (path === "/admin/login" && request.method === "GET") {
+        const session = await verifySession(request, env);
+        if (session) return Response.redirect(new URL("/admin", url), 302);
         const nonce = makeNonce();
-        return html(renderAdminHtml(nonce), nonce, { status: 200 });
+        return html(renderAdminLoginHtml(nonce), nonce, { status: 200 });
       }
 
       if (path.startsWith("/api/")) {

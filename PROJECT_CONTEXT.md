@@ -156,6 +156,7 @@ Notable public assets:
 - Serves admin APIs under `/api/admin/*` for login/logout and KV-backed content updates.
 - Serves public runtime content endpoint at `/api/content/public`.
 - Uses signed HttpOnly cookie sessions, CSRF checks for mutating APIs, and KV-based login rate limiting.
+- Admin login requires Worker secrets `ADMIN_USER`, `ADMIN_PASSWORD_RECORD`, and `SESSION_SECRET`.
 - Falls back to static `site-data.ts` seed values when KV documents do not exist yet.
 
 ## Data Model

@@ -93,6 +93,7 @@ Static assets live in `public/` and are referenced with root-relative URLs such 
 
 Admin UI static assets:
 
+- `public/admin/utils.js`
 - `public/admin/login.css`
 - `public/admin/login.js`
 - `public/admin/panel.css`
@@ -166,6 +167,7 @@ Notable public assets:
 - Admin login requires Worker secrets `ADMIN_USER`, `ADMIN_PASSWORD_RECORD`, and `SESSION_SECRET`.
 - Falls back to static `site-data.ts` seed values when KV documents do not exist yet.
 - Admin HTML shells now load UI behavior/styles from `public/admin/*` assets (no large inline editor script).
+- Admin panel now includes session quick actions, session list filters/search/sort, and a checklist/conflict hint area for safer edits.
 
 ## Data Model
 

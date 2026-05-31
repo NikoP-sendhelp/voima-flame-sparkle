@@ -11,6 +11,13 @@ const state = {
   selectedSiteCopyKey: "",
   selectedNewsId: "",
   busy: false,
+  sessionFilters: {
+    serviceSlug: "all",
+    status: "all",
+    month: "all",
+    search: "",
+    sort: "upcoming",
+  },
 };
 
 const knownSiteKeys = [
@@ -92,14 +99,7 @@ const el = {
   status: document.getElementById("admin-status"),
 };
 
-function normalizeSlug(input) {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/-{2,}/g, "-")
-    .replace(/^-|-$/g, "");
-}
+const utils = window.AdminUtils;
 
 function setStatus(message, kind = "ok") {
   el.status.textContent = message;
@@ -246,18 +246,21 @@ function validateItem(section, item) {
     }
   }
   if (section === "sessions") {
-    if (item.date && !/^\d{4}-\d{2}-\d{2}$/.test(item.date)) {
+    if (item.date && !utils.isIsoDate(item.date)) {
       errors.push({ field: "date", message: "Muoto: YYYY-MM-DD" });
     }
-    if (item.startTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(item.startTime)) {
+    if (item.startTime && !utils.isIsoTime(item.startTime)) {
       errors.push({ field: "startTime", message: "Muoto: HH:MM" });
     }
-    if (item.endTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(item.endTime)) {
+    if (item.endTime && !utils.isIsoTime(item.endTime)) {
       errors.push({ field: "endTime", message: "Muoto: HH:MM" });
+    }
+    if (item.endTime && item.startTime && item.endTime <= item.startTime) {
+      errors.push({ field: "endTime", message: "Päättymisajan tulee olla alkamisajan jälkeen." });
     }
   }
   if (section === "services") {
-    const slug = normalizeSlug(item.slug || "");
+    const slug = utils.normalizeSlug(item.slug || "");
     if (!slug) errors.push({ field: "slug", message: "Slug ei voi olla tyhjä." });
     const duplicate = state.content.services.data.some(
       (service) => service.slug === slug && service.slug !== getSelection("services"),
@@ -397,15 +400,179 @@ function renderField(field, item, errors, section) {
     }
     item[field.key] = field.key === "body" ? value.split("\n").filter((entry) => entry.trim()) : value;
     if (section === "services" && field.key === "name") {
-      item.slug = normalizeSlug(value);
+      item.slug = utils.normalizeSlug(value);
     }
     if (section === "sessions" && field.key === "serviceSlug" && (!item.title || item.title.trim() === "")) {
       const selectedService = serviceOptions().find((entry) => entry.value === value);
       item.title = selectedService?.label || item.title;
     }
+    if (section === "sessions" && field.key === "serviceSlug") {
+      const selectedService = state.content.services.data.find((entry) => entry.slug === value);
+      const defaultLocation = state.content.siteCopy.data.find((entry) => entry.key === "default_location")?.value || "";
+      if (!item.title || item.title.trim() === "") item.title = selectedService?.name || item.title;
+      if (!item.location || item.location.trim() === "") item.location = selectedService?.location || defaultLocation;
+    }
   });
 
   return wrapper;
+}
+
+function isSessionPast(session) {
+  const startsAt = utils.parseSessionDateTime(session.date, session.startTime);
+  if (!startsAt) return false;
+  return startsAt.getTime() < Date.now();
+}
+
+function compareSessionOrder(a, b, sort) {
+  const aDate = utils.parseSessionDateTime(a.date, a.startTime)?.getTime() || 0;
+  const bDate = utils.parseSessionDateTime(b.date, b.startTime)?.getTime() || 0;
+  return sort === "past" ? bDate - aDate : aDate - bDate;
+}
+
+function renderSessionFilters(toolbar) {
+  const filters = document.createElement("div");
+  filters.className = "session-filters";
+  const byService = document.createElement("select");
+  byService.innerHTML = `<option value="all">Kaikki palvelut</option>${serviceOptions()
+    .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
+    .join("")}`;
+  byService.value = state.sessionFilters.serviceSlug;
+  byService.addEventListener("change", () => {
+    state.sessionFilters.serviceSlug = byService.value;
+    renderSection("sessions");
+  });
+
+  const byStatus = document.createElement("select");
+  byStatus.innerHTML = `
+    <option value="all">Kaikki tilat</option>
+    <option value="scheduled">Aikataulutettu</option>
+    <option value="sold-out">Loppuunmyyty</option>
+    <option value="cancelled">Peruttu</option>
+  `;
+  byStatus.value = state.sessionFilters.status;
+  byStatus.addEventListener("change", () => {
+    state.sessionFilters.status = byStatus.value;
+    renderSection("sessions");
+  });
+
+  const byMonth = document.createElement("select");
+  const months = [...new Set(state.content.sessions.data.map((item) => item.date?.slice(0, 7)).filter(Boolean))].sort();
+  byMonth.innerHTML = `<option value="all">Kaikki kuukaudet</option>${months
+    .map((month) => `<option value="${month}">${month}</option>`)
+    .join("")}`;
+  byMonth.value = state.sessionFilters.month;
+  byMonth.addEventListener("change", () => {
+    state.sessionFilters.month = byMonth.value;
+    renderSection("sessions");
+  });
+
+  const search = document.createElement("input");
+  search.type = "search";
+  search.placeholder = "Hae otsikolla tai sijainnilla";
+  search.value = state.sessionFilters.search;
+  search.addEventListener("input", () => {
+    state.sessionFilters.search = search.value;
+    renderSection("sessions");
+  });
+
+  const sort = document.createElement("select");
+  sort.innerHTML = `
+    <option value="upcoming">Järjestys: tulevat</option>
+    <option value="past">Järjestys: menneet</option>
+  `;
+  sort.value = state.sessionFilters.sort;
+  sort.addEventListener("change", () => {
+    state.sessionFilters.sort = sort.value;
+    renderSection("sessions");
+  });
+
+  filters.append(byService, byStatus, byMonth, sort, search);
+  toolbar.append(filters);
+}
+
+function filteredSessionList(data) {
+  const q = state.sessionFilters.search.trim().toLowerCase();
+  return data
+    .filter((item) => state.sessionFilters.serviceSlug === "all" || item.serviceSlug === state.sessionFilters.serviceSlug)
+    .filter((item) => state.sessionFilters.status === "all" || (item.status || "scheduled") === state.sessionFilters.status)
+    .filter((item) => state.sessionFilters.month === "all" || item.date?.slice(0, 7) === state.sessionFilters.month)
+    .filter((item) => !q || item.title?.toLowerCase().includes(q) || item.location?.toLowerCase().includes(q))
+    .sort((a, b) => compareSessionOrder(a, b, state.sessionFilters.sort));
+}
+
+function quickActionButtons(selectedItem, onDone) {
+  const wrap = document.createElement("div");
+  wrap.className = "quick-actions";
+  const duplicate = createButton("Duplikoi", "", () => {
+    const clone = { ...selectedItem, id: `${selectedItem.id}-copy` };
+    state.content.sessions.data.unshift(clone);
+    state.selectedSessionId = clone.id;
+    onDone();
+  });
+  const moveWeek = createButton("+7 pv", "", () => {
+    if (!utils.isIsoDate(selectedItem.date)) return;
+    const moved = new Date(`${selectedItem.date}T00:00:00`);
+    moved.setDate(moved.getDate() + 7);
+    selectedItem.date = moved.toISOString().slice(0, 10);
+    onDone();
+  });
+  const cancel = createButton("Merkitse perutuksi", "danger", () => {
+    selectedItem.status = "cancelled";
+    onDone();
+  });
+  const next = createButton("Luo seuraava sessio", "", () => {
+    if (!utils.isIsoDate(selectedItem.date)) return;
+    const d = new Date(`${selectedItem.date}T00:00:00`);
+    d.setDate(d.getDate() + 7);
+    const copy = {
+      ...selectedItem,
+      id: `${selectedItem.serviceSlug}-${d.toISOString().slice(0, 10)}`,
+      date: d.toISOString().slice(0, 10),
+      status: "scheduled",
+    };
+    state.content.sessions.data.unshift(copy);
+    state.selectedSessionId = copy.id;
+    onDone();
+  });
+  wrap.append(duplicate, moveWeek, cancel, next);
+  return wrap;
+}
+
+function findSessionConflicts(session) {
+  if (!session?.id || !session?.date || !session?.startTime) return [];
+  const start = utils.parseSessionDateTime(session.date, session.startTime);
+  if (!start) return [];
+  const end = session.endTime
+    ? utils.parseSessionDateTime(session.date, session.endTime)
+    : new Date(start.getTime() + 60 * 60 * 1000);
+  return state.content.sessions.data.filter((entry) => {
+    if (entry.id === session.id) return false;
+    if (entry.serviceSlug !== session.serviceSlug || entry.date !== session.date) return false;
+    const entryStart = utils.parseSessionDateTime(entry.date, entry.startTime);
+    if (!entryStart) return false;
+    const entryEnd = entry.endTime
+      ? utils.parseSessionDateTime(entry.date, entry.endTime)
+      : new Date(entryStart.getTime() + 60 * 60 * 1000);
+    return start < entryEnd && end > entryStart;
+  });
+}
+
+function renderChecklist(section, selectedItem, errors) {
+  if (section !== "sessions") return null;
+  const checklist = document.createElement("div");
+  checklist.className = "checklist";
+  const required = ["id", "serviceSlug", "title", "date", "startTime", "location", "summary"];
+  const missing = required.filter((key) => !String(selectedItem[key] || "").trim());
+  const conflicts = findSessionConflicts(selectedItem);
+  const localPreview = utils.formatLocalDateTime(selectedItem.date, selectedItem.startTime);
+  checklist.innerHTML = `
+    <p class="check-title">Tarkistuslista</p>
+    <p class="check-row ${missing.length ? "warn" : "ok"}">${missing.length ? `Puuttuu kenttiä: ${missing.join(", ")}` : "Pakolliset kentät täytetty."}</p>
+    <p class="check-row ${conflicts.length ? "warn" : "ok"}">${conflicts.length ? `Aikakonflikti: ${conflicts.length} päällekkäistä sessiota.` : "Ei aikakonflikteja samalle palvelulle."}</p>
+    <p class="check-row ${errors.length ? "warn" : "ok"}">${errors.length ? "Korjaa lomakevirheet ennen tallennusta." : "Lomake on valmis tallennettavaksi."}</p>
+    <p class="check-row">${localPreview ? `Paikallinen esikatselu: ${localPreview}` : "Valitse päivä ja aika nähdäksesi esikatselun."}</p>
+  `;
+  return checklist;
 }
 
 function renderSection(section) {
@@ -436,6 +603,9 @@ function renderSection(section) {
       renderSection(section);
     }),
   );
+  if (section === "sessions") {
+    renderSessionFilters(listCard);
+  }
   toolbar.append(
     createButton("Poista", "danger", () => {
       if (!getSelection(section)) return;
@@ -448,13 +618,16 @@ function renderSection(section) {
   list.className = "list";
   listCard.append(list);
 
-  const data = getSectionData(section);
+  const rawData = getSectionData(section);
+  const data = section === "sessions" ? filteredSessionList(rawData) : rawData;
   const selectedId = getSelection(section);
   for (const item of data) {
     const id = getItemId(section, item);
     const button = document.createElement("button");
     if (id === selectedId) button.classList.add("active");
     const title = section === "services" ? item.name : section === "sitecopy" ? item.key : item.title;
+    const sessionTone = section === "sessions" ? (isSessionPast(item) ? "past" : "upcoming") : "";
+    if (sessionTone) button.classList.add(sessionTone);
     button.innerHTML = `<p class="title">${title || "(nimetön)"}</p><p class="meta">${listMeta(section, item)}</p>`;
     button.addEventListener("click", () => {
       setSelection(section, id);
@@ -481,6 +654,11 @@ function renderSection(section) {
     formGrid.append(fieldNode);
   }
   formCard.append(formGrid);
+  if (section === "sessions") {
+    formCard.append(quickActionButtons(selectedItem, () => renderSection(section)));
+  }
+  const checklist = renderChecklist(section, selectedItem, errors);
+  if (checklist) formCard.append(checklist);
 
   const actions = document.createElement("div");
   actions.className = "actions";

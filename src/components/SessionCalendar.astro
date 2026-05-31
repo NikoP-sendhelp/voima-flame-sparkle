@@ -183,12 +183,16 @@ const calendarData = scopedEvents
     return events
       .map((event: any) => {
         const service = serviceMap.get(event.serviceSlug);
+        const resolvedBookingUrl =
+          typeof event.bookingUrl === "string" && event.bookingUrl.trim().length > 0
+            ? event.bookingUrl
+            : "/yhteys";
         return {
           ...event,
           serviceName: service?.name ?? event.title,
           serviceUrl: service ? `/palvelut/${service.slug}` : "/palvelut",
           color: service?.color ?? "#be5736",
-          bookingUrl: event.bookingUrl ?? "",
+          bookingUrl: resolvedBookingUrl,
         };
       })
       .sort((a: any, b: any) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`));

@@ -43,7 +43,7 @@ All commands run from the repository root:
 - Static images are referenced from `public/` with root-relative URLs.
 - Admin panel and admin APIs are served by Cloudflare Worker routes at `/admin` and `/api/admin/*`.
 - Public runtime overrides are served at `/api/content/public` (KV-backed with static fallback).
-- Admin UI assets live in `public/admin/` (`login.css`, `login.js`, `panel.css`, `panel.js`) and are served by the same Worker.
+- Admin UI assets live in `public/admin/` (`utils.js`, `login.css`, `login.js`, `panel.css`, `panel.js`) and are served by the same Worker.
 
 ## Worker Admin Setup
 
@@ -74,7 +74,7 @@ All commands run from the repository root:
 7. Open `/admin`:
    - unauthenticated users are redirected to `/admin/login`
    - after login, use tabs to manage sessions/services/site text/news scaffold
-   - session forms use typed controls (date/time/select) and service-aware defaults
+   - session forms use typed controls (date/time/select), service-aware defaults, quick actions (`Duplikoi`, `+7 pv`, `Merkitse perutuksi`, `Luo seuraava sessio`), plus list filters/search/sort
 
 The Worker now stores editable documents in KV:
 - `content:services:v1`

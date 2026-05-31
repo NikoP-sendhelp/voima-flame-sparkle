@@ -3,7 +3,7 @@ type WorkerAssetBinding = {
 };
 
 interface Env {
-  ASSETS: WorkerAssetBinding;
+  ASSETS?: WorkerAssetBinding;
   CONTENT_KV: KVNamespace;
   ADMIN_USER?: string;
   ADMIN_PASSWORD_RECORD?: string;

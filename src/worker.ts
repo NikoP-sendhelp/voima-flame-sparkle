@@ -514,6 +514,7 @@ function renderAdminHtml(nonce: string): string {
       <div id="admin-status" class="status" role="status" aria-live="polite"></div>
     </section>
   </main>
+  <script nonce="${nonce}" src="/admin/utils.js" defer></script>
   <script nonce="${nonce}" src="/admin/panel.js" defer></script>
 </body>
 </html>`;
@@ -721,7 +722,18 @@ export default {
         return handleApi(request, env, path);
       }
 
-      return env.ASSETS.fetch(request);
+      if (env.ASSETS && typeof env.ASSETS.fetch === "function") {
+        return env.ASSETS.fetch(request);
+      }
+
+      return json(
+        {
+          error: "assets_binding_missing",
+          message:
+            "ASSETS-binding puuttuu tästä ajosta. Aja paikallisesti komennolla `npm run preview` (wrangler dev + dist assets).",
+        },
+        { status: 500 },
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "unexpected_error";
       return json({ error: message }, { status: 500 });

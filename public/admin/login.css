@@ -20,6 +20,8 @@ body {
   background:
     radial-gradient(circle at 12% 14%, rgba(229,146,67,.24), transparent 28rem),
     linear-gradient(145deg, var(--bg-2), var(--bg-1));
+  font-size: 14px;
+  line-height: 1.45;
 }
 .login-shell { width: min(100%, 980px); }
 .login-grid {
@@ -56,7 +58,7 @@ body {
 .panel { padding: 30px; }
 .eyebrow {
   margin: 0;
-  font-size: .67rem;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: .13em;
   font-weight: 700;
@@ -73,13 +75,13 @@ h2 {
   margin: 12px 0 22px;
   color: var(--muted);
   line-height: 1.55;
-  font-size: .94rem;
+  font-size: 14px;
 }
 .field { margin-bottom: 14px; }
 label {
   display: block;
   margin-bottom: 6px;
-  font-size: .67rem;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: .12em;
   font-weight: 700;
@@ -107,7 +109,7 @@ button {
   border-radius: 999px;
   min-height: 44px;
   padding: 10px 18px;
-  font-size: .7rem;
+  font-size: 14px;
   letter-spacing: .14em;
   text-transform: uppercase;
   font-weight: 800;
@@ -126,7 +128,7 @@ button:disabled {
 .status {
   min-height: 24px;
   margin-top: 14px;
-  font-size: .9rem;
+  font-size: 14px;
   line-height: 1.4;
 }
 .status.error { color: #9f2f1f; }

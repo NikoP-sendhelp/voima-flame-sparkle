@@ -26,6 +26,12 @@ const knownSiteKeys = [
   { value: "default_booking_phone", label: "Varauspuhelin" },
 ];
 
+const contextMap = [
+  { key: "default_location", page: "Yhteys-sivu", description: "Osoite, joka näkyy kaikilla sivuilla ja palvelukorteissa" },
+  { key: "default_booking_email", page: "Yhteys-sivu", description: "Sähköposti, jota käytetään varaustiedusteluihin" },
+  { key: "default_booking_phone", page: "Yhteys-sivu", description: "Puhelinnumero, joka näkyy yhteystiedoissa" },
+];
+
 const schemas = /** @type {AdminSectionSchema[]} */ ([
   {
     section: "sessions",
@@ -104,6 +110,99 @@ const utils = window.AdminUtils;
 function setStatus(message, kind = "ok") {
   el.status.textContent = message;
   el.status.className = `status ${kind === "error" ? "error" : "ok"}`;
+}
+
+/* Toast notifications */
+function showToast(message, kind = "ok") {
+  let container = document.querySelector(".toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "toast-container";
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement("div");
+  toast.className = `toast ${kind}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add("out");
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+/* Loading overlay */
+function showLoading() {
+  let overlay = document.querySelector(".loading-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.className = "loading-overlay";
+    overlay.innerHTML = '<div class="loading-spinner"></div>';
+    document.body.appendChild(overlay);
+  }
+}
+function hideLoading() {
+  const overlay = document.querySelector(".loading-overlay");
+  if (overlay) overlay.remove();
+}
+
+/* Autosave */
+function autosaveKey(section, itemId) {
+  return `vl_admin_autosave_${section}_${itemId || "new"}`;
+}
+function saveAutosave(section, item) {
+  const key = autosaveKey(section, getItemId(section, item));
+  try {
+    localStorage.setItem(key, JSON.stringify({ data: item, timestamp: Date.now() }));
+  } catch {}
+}
+function loadAutosave(section, itemId) {
+  const key = autosaveKey(section, itemId);
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+function clearAllAutosave(section) {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(`vl_admin_autosave_${section}_`)) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {}
+}
+
+/* Undo */
+const undoStack = {
+  sessions: [],
+  services: [],
+  sitecopy: [],
+  news: [],
+};
+function pushUndo(section) {
+  const data = getSectionData(section);
+  const stack = undoStack[section];
+  if (!stack) return;
+  const clone = JSON.parse(JSON.stringify(data));
+  stack.push(clone);
+  if (stack.length > 10) stack.shift();
+}
+function undo() {
+  const section = state.activeTab;
+  const stack = undoStack[section];
+  if (!stack || !stack.length) {
+    showToast("Ei mitään kumottavaa.", "ok");
+    return;
+  }
+  const prev = stack.pop();
+  if (section === "sessions") state.content.sessions.data = prev;
+  else if (section === "services") state.content.services.data = prev;
+  else if (section === "sitecopy") state.content.siteCopy.data = prev;
+  else if (section === "news") state.content.news.data = prev;
+  render();
+  showToast("Kumottu.", "ok");
 }
 
 function mapApiError(errorCode, fallback) {
@@ -318,6 +417,7 @@ function deleteSelected(section) {
 
 async function saveSection(section) {
   state.busy = true;
+  showLoading();
   const endpoint = section === "sessions"
     ? "/api/admin/sessions"
     : section === "services"
@@ -332,16 +432,26 @@ async function saveSection(section) {
       : section === "sitecopy"
         ? { items: state.content.siteCopy.data }
         : { posts: state.content.news.data };
-  const response = await request(endpoint, {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (section === "sessions") state.content.sessions = response.sessions;
-  if (section === "services") state.content.services = response.services;
-  if (section === "sitecopy") state.content.siteCopy = response.siteCopy;
-  if (section === "news") state.content.news = response.news;
-  state.busy = false;
+  try {
+    const response = await request(endpoint, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (section === "sessions") state.content.sessions = response.sessions;
+    if (section === "services") state.content.services = response.services;
+    if (section === "sitecopy") state.content.siteCopy = response.siteCopy;
+    if (section === "news") state.content.news = response.news;
+    clearAllAutosave(section);
+    showToast(`${schemas.find(s => s.section === section)?.title || section} tallennettu.`, "ok");
+    render();
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : "Tallennus epäonnistui.", "error");
+    throw error;
+  } finally {
+    state.busy = false;
+    hideLoading();
+  }
 }
 
 function renderField(field, item, errors, section) {
@@ -412,6 +522,7 @@ function renderField(field, item, errors, section) {
       if (!item.title || item.title.trim() === "") item.title = selectedService?.name || item.title;
       if (!item.location || item.location.trim() === "") item.location = selectedService?.location || defaultLocation;
     }
+    saveAutosave(section, item);
   });
 
   return wrapper;
@@ -504,6 +615,7 @@ function quickActionButtons(selectedItem, onDone) {
   const wrap = document.createElement("div");
   wrap.className = "quick-actions";
   const duplicate = createButton("Duplikoi", "", () => {
+    pushUndo("sessions");
     const clone = { ...selectedItem, id: `${selectedItem.id}-copy` };
     state.content.sessions.data.unshift(clone);
     state.selectedSessionId = clone.id;
@@ -511,17 +623,20 @@ function quickActionButtons(selectedItem, onDone) {
   });
   const moveWeek = createButton("+7 pv", "", () => {
     if (!utils.isIsoDate(selectedItem.date)) return;
+    pushUndo("sessions");
     const moved = new Date(`${selectedItem.date}T00:00:00`);
     moved.setDate(moved.getDate() + 7);
     selectedItem.date = moved.toISOString().slice(0, 10);
     onDone();
   });
   const cancel = createButton("Merkitse perutuksi", "danger", () => {
+    pushUndo("sessions");
     selectedItem.status = "cancelled";
     onDone();
   });
   const next = createButton("Luo seuraava sessio", "", () => {
     if (!utils.isIsoDate(selectedItem.date)) return;
+    pushUndo("sessions");
     const d = new Date(`${selectedItem.date}T00:00:00`);
     d.setDate(d.getDate() + 7);
     const copy = {
@@ -575,10 +690,161 @@ function renderChecklist(section, selectedItem, errors) {
   return checklist;
 }
 
+function renderPreview(section, selectedItem) {
+  if (!selectedItem) return;
+  let overlay = document.querySelector(".preview-modal-overlay");
+  if (overlay) overlay.remove();
+  overlay = document.createElement("div");
+  overlay.className = "preview-modal-overlay";
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+  const modal = document.createElement("div");
+  modal.className = "preview-modal";
+
+  const header = document.createElement("header");
+  const title = document.createElement("h3");
+  title.textContent = "Esikatselu";
+  const close = document.createElement("button");
+  close.className = "close";
+  close.textContent = "✕";
+  close.addEventListener("click", () => overlay.remove());
+  header.append(title, close);
+  modal.append(header);
+
+  const body = document.createElement("div");
+  body.className = "preview-content";
+
+  if (section === "services") {
+    const card = document.createElement("div");
+    card.className = "preview-card";
+    if (selectedItem.image) {
+      const img = document.createElement("img");
+      img.src = selectedItem.image;
+      img.alt = selectedItem.name || "";
+      img.className = "card-image";
+      card.appendChild(img);
+    }
+    const cardBody = document.createElement("div");
+    cardBody.className = "card-body";
+    cardBody.innerHTML = `
+      <p class="card-meta">${selectedItem.number || ""} · ${selectedItem.duration || ""} · ${selectedItem.price || ""}</p>
+      <h4 class="card-title">${selectedItem.name || "(nimetön)"}</h4>
+      <p class="card-short">${selectedItem.tagline || ""}</p>
+    `;
+    card.appendChild(cardBody);
+    if (Array.isArray(selectedItem.body) && selectedItem.body.length) {
+      const bodyList = document.createElement("div");
+      bodyList.className = "card-body-list";
+      selectedItem.body.forEach((p) => {
+        const para = document.createElement("p");
+        para.textContent = p;
+        bodyList.appendChild(para);
+      });
+      card.appendChild(bodyList);
+    }
+    body.appendChild(card);
+  } else if (section === "sitecopy") {
+    body.innerHTML = `<p><strong>${selectedItem.key}:</strong> ${selectedItem.value}</p>`;
+  } else if (section === "sessions") {
+    body.innerHTML = `
+      <p><strong>${selectedItem.title}</strong></p>
+      <p>${selectedItem.date} ${selectedItem.startTime}${selectedItem.endTime ? "–" + selectedItem.endTime : ""}</p>
+      <p>${selectedItem.location}</p>
+      <p>${selectedItem.summary}</p>
+    `;
+  } else {
+    body.innerHTML = `<p><strong>${selectedItem.title || "(nimetön)"}</strong></p>`;
+  }
+
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
+function renderContextMap() {
+  const map = document.createElement("div");
+  map.className = "context-map";
+  const title = document.createElement("p");
+  title.className = "context-map-title";
+  title.textContent = "Missä tietoa käytetään sivustolla:";
+  map.appendChild(title);
+  contextMap.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "context-map-item";
+    row.innerHTML = `<span class="key">${item.key}</span><span class="page">${item.page}</span>`;
+    const desc = document.createElement("p");
+    desc.style = "margin:2px 0 0;font-size:13px;color:var(--muted);";
+    desc.textContent = item.description;
+    row.appendChild(desc);
+    map.appendChild(row);
+  });
+  return map;
+}
+
+function renderRecoveryBanner(section) {
+  const savedKeys = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(`vl_admin_autosave_${section}_`)) {
+        savedKeys.push(key);
+      }
+    }
+  } catch {}
+  if (!savedKeys.length) return null;
+  const banner = document.createElement("div");
+  banner.className = "recovery-banner";
+  banner.innerHTML = `<p>🔄 Paikallisia tallentamattomia muutoksia löytyi.</p>`;
+  const restoreBtn = createButton("Palauta muutokset", "primary", () => {
+    for (const key of savedKeys) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(key));
+        if (!saved || !saved.data) continue;
+        const data = getSectionData(section);
+        const savedId = getItemId(section, saved.data);
+        const index = data.findIndex((item) => getItemId(section, item) === savedId);
+        if (index >= 0) {
+          data[index] = saved.data;
+        }
+      } catch {}
+    }
+    showToast("Muutokset palautettu.", "ok");
+    renderSection(section);
+    banner.remove();
+  });
+  const discardBtn = createButton("Hylkää", "", () => {
+    for (const key of savedKeys) {
+      try { localStorage.removeItem(key); } catch {}
+    }
+    banner.remove();
+  });
+  banner.append(restoreBtn, discardBtn);
+  return banner;
+}
+
+function renderEmptyState(section, onCreate) {
+  const empty = document.createElement("div");
+  empty.className = "empty-state";
+  const title = document.createElement("p");
+  const schema = schemas.find((s) => s.section === section);
+  title.innerHTML = `<strong>Ei vielä ${schema?.title.toLowerCase() || "merkintöjä"}.</strong>`;
+  empty.appendChild(title);
+  const desc = document.createElement("p");
+  desc.textContent = "Aloita luomalla ensimmäinen merkintä.";
+  empty.appendChild(desc);
+  const btn = createButton(`Luo ensimmäinen ${schema?.title.toLowerCase() || "merkintä"}`, "primary", onCreate);
+  empty.appendChild(btn);
+  return empty;
+}
+
 function renderSection(section) {
   const schema = schemaWithDynamicOptions(schemas.find((entry) => entry.section === section));
   const root = document.getElementById(`section-${section}`);
   root.textContent = "";
+
+  const recovery = renderRecoveryBanner(section);
+  if (recovery) root.appendChild(recovery);
 
   const layout = document.createElement("div");
   layout.className = "layout";
@@ -596,6 +862,7 @@ function renderSection(section) {
   listCard.append(toolbar);
   toolbar.append(
     createButton("Uusi", "primary", () => {
+      pushUndo(section);
       const created = makeDefaultItem(section);
       const data = getSectionData(section);
       data.unshift(created);
@@ -609,8 +876,11 @@ function renderSection(section) {
   toolbar.append(
     createButton("Poista", "danger", () => {
       if (!getSelection(section)) return;
+      if (!confirm("Haluatko varmasti poistaa tämän?")) return;
+      pushUndo(section);
       deleteSelected(section);
       renderSection(section);
+      showToast("Poistettu.", "ok");
     }),
   );
 
@@ -621,6 +891,17 @@ function renderSection(section) {
   const rawData = getSectionData(section);
   const data = section === "sessions" ? filteredSessionList(rawData) : rawData;
   const selectedId = getSelection(section);
+
+  if (!rawData.length && section !== "sessions") {
+    list.appendChild(renderEmptyState(section, () => {
+      pushUndo(section);
+      const created = makeDefaultItem(section);
+      rawData.unshift(created);
+      setSelection(section, getItemId(section, created));
+      renderSection(section);
+    }));
+  }
+
   for (const item of data) {
     const id = getItemId(section, item);
     const button = document.createElement("button");
@@ -657,11 +938,22 @@ function renderSection(section) {
   if (section === "sessions") {
     formCard.append(quickActionButtons(selectedItem, () => renderSection(section)));
   }
+  if (section === "services") {
+    const previewBtn = createButton("Esikatsele", "", () => renderPreview("services", selectedItem));
+    formCard.appendChild(previewBtn);
+  }
+  if (section === "sitecopy") {
+    formCard.appendChild(renderContextMap());
+  }
   const checklist = renderChecklist(section, selectedItem, errors);
   if (checklist) formCard.append(checklist);
 
   const actions = document.createElement("div");
   actions.className = "actions";
+  if (section === "services" || section === "sessions") {
+    const previewBtn = createButton("Esikatsele", "", () => renderPreview(section, selectedItem));
+    actions.append(previewBtn);
+  }
   const saveButton = createButton("Tallenna", "primary", async () => {
     const latestErrors = validateItem(section, selectedItem);
     if (latestErrors.length) {
@@ -669,16 +961,13 @@ function renderSection(section) {
       renderSection(section);
       return;
     }
-    saveButton.disabled = true;
+    pushUndo(section);
     try {
       await saveSection(section);
-      setStatus(`${schema.title} tallennettu.`, "ok");
       renderSection(section);
       document.getElementById(`section-${section}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Tallennus epäonnistui.", "error");
-    } finally {
-      saveButton.disabled = false;
     }
   });
   actions.append(saveButton);
@@ -728,6 +1017,34 @@ el.logout.addEventListener("click", async () => {
     await request("/api/admin/auth/logout", { method: "POST" });
   } finally {
     window.location.assign("/admin/login");
+  }
+});
+
+/* Keyboard shortcuts */
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && (e.key === "s" || e.key === "S")) {
+    e.preventDefault();
+    const saveBtn = document.querySelector(".actions button.primary");
+    if (saveBtn && !saveBtn.disabled) saveBtn.click();
+  }
+  if (e.ctrlKey && (e.key === "z" || e.key === "Z")) {
+    e.preventDefault();
+    undo();
+  }
+});
+
+/* Warn about unsaved changes on page unload */
+window.addEventListener("beforeunload", (e) => {
+  const section = state.activeTab;
+  const data = getSectionData(section);
+  const selectedId = getSelection(section);
+  if (!selectedId) return;
+  const item = data.find((i) => getItemId(section, i) === selectedId);
+  if (!item) return;
+  const saved = loadAutosave(section, selectedId);
+  if (saved && JSON.stringify(saved.data) !== JSON.stringify(item)) {
+    e.preventDefault();
+    e.returnValue = "";
   }
 });
 

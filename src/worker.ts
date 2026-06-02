@@ -56,6 +56,32 @@ type PublicContentResponse = {
   siteCopy: SiteCopyBlock[];
 };
 
+type TurnstileMode = "off" | "observe" | "enforce";
+
+type TurnstileConfig = {
+  enabled: boolean;
+  mode: TurnstileMode;
+  secretKey?: string;
+  siteKey?: string;
+};
+
+type TurnstileVerifyResult = {
+  ok: boolean;
+  reason:
+    | "disabled"
+    | "missing_secret"
+    | "missing_token"
+    | "bad_request"
+    | "verification_failed"
+    | "runtime_error";
+  action: "allow" | "report" | "block";
+  metadata?: {
+    mode: TurnstileMode;
+    cfCodes?: string[];
+    hostname?: string;
+  };
+};
+
 const CONTENT_KEYS = {
   services: "content:services:v1",
   sessions: "content:sessions:v1",
@@ -295,10 +321,21 @@ async function verifySession(request: Request, env: Env): Promise<SessionPayload
   if (!payloadPart || !signaturePart) return null;
   const expected = await hmacSign(payloadPart, sessionSecret);
   if (!timingSafeEqual(expected, signaturePart)) return null;
-  const payloadRaw = base64UrlDecode(payloadPart);
-  const payload = JSON.parse(payloadRaw) as SessionPayload;
+  let payload: SessionPayload;
+  try {
+    const payloadRaw = base64UrlDecode(payloadPart);
+    payload = JSON.parse(payloadRaw) as SessionPayload;
+  } catch {
+    return null;
+  }
   if (payload.exp < Math.floor(Date.now() / 1000)) return null;
   return payload;
+}
+
+function normalizeAdminRoute(path: string): string {
+  if (path === "/admin/") return "/admin";
+  if (path === "/admin/login/") return "/admin/login";
+  return path;
 }
 
 function clearSessionCookie(): string {
@@ -347,6 +384,145 @@ function hasIsoTime(time: string): boolean {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function parseBooleanFlag(input: string | undefined, fallback = false): boolean {
+  if (!input) return fallback;
+  const normalized = input.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+}
+
+function getTurnstileConfig(env: Env): TurnstileConfig {
+  const enabled = parseBooleanFlag(env.TURNSTILE_ENABLED, false);
+  const rawMode = env.TURNSTILE_MODE?.trim().toLowerCase();
+  const mode: TurnstileMode =
+    rawMode === "enforce" || rawMode === "observe" || rawMode === "off"
+      ? rawMode
+      : enabled
+        ? "observe"
+        : "off";
+
+  return {
+    enabled,
+    mode,
+    secretKey: env.TURNSTILE_SECRET_KEY,
+    siteKey: env.TURNSTILE_SITE_KEY,
+  };
+}
+
+async function extractTurnstileToken(request: Request): Promise<string | null> {
+  const headerToken = request.headers.get("cf-turnstile-response");
+  if (headerToken && headerToken.trim()) return headerToken.trim();
+
+  const contentType = request.headers.get("content-type") ?? "";
+  try {
+    if (contentType.includes("application/json")) {
+      const payload = (await request.clone().json()) as { turnstileToken?: string; cf_turnstile_response?: string };
+      const token = payload.turnstileToken ?? payload.cf_turnstile_response;
+      return token?.trim() ? token.trim() : null;
+    }
+    if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
+      const form = await request.clone().formData();
+      const raw = form.get("cf-turnstile-response");
+      const token = typeof raw === "string" ? raw : null;
+      return token?.trim() ? token.trim() : null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+async function verifyTurnstileToken(
+  token: string,
+  request: Request,
+  config: TurnstileConfig,
+): Promise<{ success: boolean; hostname?: string; errorCodes?: string[] }> {
+  if (!config.secretKey) {
+    return { success: false, errorCodes: ["missing-secret"] };
+  }
+
+  const clientIp = request.headers.get("cf-connecting-ip") ?? "";
+  const body = new URLSearchParams();
+  body.set("secret", config.secretKey);
+  body.set("response", token);
+  if (clientIp) body.set("remoteip", clientIp);
+
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+
+  if (!response.ok) {
+    return { success: false, errorCodes: [`http-${response.status}`] };
+  }
+
+  const payload = (await response.json()) as {
+    success?: boolean;
+    "error-codes"?: string[];
+    hostname?: string;
+  };
+
+  return {
+    success: Boolean(payload.success),
+    hostname: payload.hostname,
+    errorCodes: Array.isArray(payload["error-codes"]) ? payload["error-codes"] : [],
+  };
+}
+
+function logTurnstileDecision(path: string, result: TurnstileVerifyResult): void {
+  console.info(
+    JSON.stringify({
+      event: "turnstile_guard",
+      path,
+      ok: result.ok,
+      reason: result.reason,
+      action: result.action,
+      mode: result.metadata?.mode,
+      cfCodes: result.metadata?.cfCodes ?? [],
+      hostname: result.metadata?.hostname,
+    }),
+  );
+}
+
+async function runTurnstileGuard(request: Request, env: Env): Promise<TurnstileVerifyResult> {
+  const config = getTurnstileConfig(env);
+  if (!config.enabled || config.mode === "off") {
+    return { ok: true, reason: "disabled", action: "allow", metadata: { mode: config.mode } };
+  }
+  if (!config.secretKey) {
+    const action = config.mode === "enforce" ? "block" : "report";
+    return { ok: action !== "block", reason: "missing_secret", action, metadata: { mode: config.mode } };
+  }
+
+  const token = await extractTurnstileToken(request);
+  if (!token) {
+    const action = config.mode === "enforce" ? "block" : "report";
+    return { ok: action !== "block", reason: "missing_token", action, metadata: { mode: config.mode } };
+  }
+
+  try {
+    const verification = await verifyTurnstileToken(token, request, config);
+    if (!verification.success) {
+      const action = config.mode === "enforce" ? "block" : "report";
+      return {
+        ok: action !== "block",
+        reason: "verification_failed",
+        action,
+        metadata: { mode: config.mode, cfCodes: verification.errorCodes, hostname: verification.hostname },
+      };
+    }
+    return {
+      ok: true,
+      reason: "disabled",
+      action: "allow",
+      metadata: { mode: config.mode, hostname: verification.hostname },
+    };
+  } catch {
+    const action = config.mode === "enforce" ? "block" : "report";
+    return { ok: action !== "block", reason: "runtime_error", action, metadata: { mode: config.mode } };
+  }
 }
 
 async function readDoc<T>(env: Env, key: string, fallback: T): Promise<ContentDocument<T>> {
@@ -521,6 +697,12 @@ function renderAdminHtml(nonce: string): string {
 }
 
 async function handleLogin(request: Request, env: Env): Promise<Response> {
+  const turnstileResult = await runTurnstileGuard(request, env);
+  logTurnstileDecision("/api/admin/auth/login", turnstileResult);
+  if (!turnstileResult.ok && turnstileResult.action === "block") {
+    return json({ error: "turnstile_verification_failed" }, { status: 403 });
+  }
+
   const ip = getClientIp(request);
   const rateState = await getRateState(env, ip);
   const now = Math.floor(Date.now() / 1000);
@@ -597,6 +779,10 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
 async function handleApi(request: Request, env: Env, path: string): Promise<Response> {
   if (path === "/api/admin/auth/login" && request.method === "POST") {
     return handleLogin(request, env);
+  }
+  if (path === "/api/admin/content" && request.method === "GET") {
+    const turnstileResult = await runTurnstileGuard(request, env);
+    logTurnstileDecision(path, turnstileResult);
   }
   if (path === "/api/content/public" && request.method === "GET") {
     const content = await getAdminContent(env);
@@ -701,7 +887,7 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    const path = url.pathname;
+    const path = normalizeAdminRoute(url.pathname);
 
     try {
       if (path === "/admin" && request.method === "GET") {
@@ -730,7 +916,7 @@ export default {
         {
           error: "assets_binding_missing",
           message:
-            "ASSETS-binding puuttuu tästä ajosta. Aja paikallisesti komennolla `npm run preview` (wrangler dev + dist assets).",
+            "ASSETS-binding puuttuu tästä ajosta. Tarkista että komento on `npm run preview` tai `npm run preview:worker` ja että wrangler käynnistyy ilman runtime-virheitä.",
         },
         { status: 500 },
       );

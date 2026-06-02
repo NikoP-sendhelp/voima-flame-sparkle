@@ -15,6 +15,7 @@ The current implementation is a static Astro site. It does not use React, TanSta
 - Fonts from `@fontsource/cormorant-garamond` and `@fontsource/karla`.
 - `@astrojs/sitemap` integration.
 - Cloudflare Wrangler for Worker + static-asset preview, dry-run deploys, and deploys.
+- Cloudflare Wrangler pinned for stable local Worker behavior (`4.95.0` in `package.json`).
 - TypeScript strict config via `astro/tsconfigs/strict`.
 
 Primary package files:
@@ -22,6 +23,7 @@ Primary package files:
 - `package.json` defines the active scripts and dependencies.
 - `package-lock.json` is the npm lockfile. npm is the package manager for the active project.
 - There is no active `vite.config.ts`, React app entrypoint, or TanStack route tree in the current filesystem.
+- Local Worker/admin secrets are kept in `.dev.vars`; `.dev.vars.example` documents placeholders and generation commands.
 
 ## Commands
 
@@ -35,9 +37,18 @@ Run commands from the repository root.
 | `npx tsc --noEmit` | Type-check without building. |
 | `npm run check` | Build, type-check, and run `wrangler deploy --dry-run`. |
 | `npm run preview` | Build and preview through Wrangler. |
+| `npm run preview:worker` | Run only Worker runtime for admin/API troubleshooting. |
+| `npm run preview:fallback` | Alternate Wrangler local startup path. |
 | `npm run deploy` | Deploy static assets through Wrangler. |
 
 `npm run check` sets `WRANGLER_LOG_PATH=.wrangler/logs` so Wrangler writes logs inside the repo instead of the user home directory.
+
+Generated Wrangler state is intentionally ignored:
+
+- `.wrangler/`
+- `.wrangler.backup/`
+- `.mf/`
+- `worker-configuration.d.ts`
 
 ## Build And Deployment
 
@@ -57,6 +68,8 @@ Wrangler configuration lives in `wrangler.json`:
 - Observability is enabled.
 
 The active Wrangler config now serves both Worker routes and static assets in one deployment.
+
+The checked-in KV namespace IDs are deployment configuration, not secrets. Worker secrets still belong in `.dev.vars` locally and `wrangler secret put` for production.
 
 ## Source Tree
 
@@ -165,8 +178,18 @@ Notable public assets:
 - Serves public runtime content endpoint at `/api/content/public`.
 - Uses signed HttpOnly cookie sessions, CSRF checks for mutating APIs, and KV-based login rate limiting.
 - Admin login requires Worker secrets `ADMIN_USER`, `ADMIN_PASSWORD_RECORD`, and `SESSION_SECRET`.
+- Includes global Turnstile scaffolding (feature-flagged, default non-enforcing) with reusable guard + Siteverify helper.
 - Falls back to static `site-data.ts` seed values when KV documents do not exist yet.
 - Admin HTML shells now load UI behavior/styles from `public/admin/*` assets (no large inline editor script).
+
+Turnstile-related env vars (scaffolded):
+
+- `TURNSTILE_ENABLED`
+- `TURNSTILE_MODE` (`off|observe|enforce`)
+- `TURNSTILE_SECRET_KEY`
+- `TURNSTILE_SITE_KEY`
+
+Default local mode is `TURNSTILE_ENABLED=false` with `TURNSTILE_MODE=observe`, so the guard can be wired without blocking current admin login behavior.
 - Admin panel now includes session quick actions, session list filters/search/sort, and a checklist/conflict hint area for safer edits.
 
 ## Data Model

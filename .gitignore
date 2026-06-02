@@ -193,6 +193,9 @@ dist
 
 ### Wrangler ###
 .wrangler/
+.wrangler.backup/
+.mf/
+worker-configuration.d.ts
 .env*
 !.env.example
 .dev.vars*

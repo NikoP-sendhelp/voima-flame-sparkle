@@ -1,6 +1,19 @@
-# Local Wrangler development variables for admin login.
-# Copy this file to `.dev.vars` and replace values.
+# Local Wrangler development variables.
+# Copy to `.dev.vars`; never commit real secrets.
+#
+# Generate ADMIN_PASSWORD_RECORD:
+# node -e 'const c=require("crypto");const p=process.argv[1];const i=100000;const s=c.randomBytes(16).toString("hex");const h=c.pbkdf2Sync(p,Buffer.from(s,"hex"),i,32,"sha256").toString("hex");console.log("pbkdf2$sha256$"+i+"$"+s+"$"+h)' "YOUR_PASSWORD_HERE"
+#
+# Generate SESSION_SECRET:
+# node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ADMIN_USER=admin
 ADMIN_PASSWORD_RECORD=pbkdf2$sha256$100000$REPLACE_WITH_32_HEX_SALT$REPLACE_WITH_64_HEX_HASH
 SESSION_SECRET=REPLACE_WITH_LONG_RANDOM_HEX
+
+# Turnstile is scaffolded but non-enforcing by default.
+# Use TURNSTILE_MODE=observe before switching to enforce.
+TURNSTILE_ENABLED=false
+TURNSTILE_MODE=observe
+TURNSTILE_SECRET_KEY=REPLACE_WITH_TURNSTILE_SECRET
+TURNSTILE_SITE_KEY=REPLACE_WITH_TURNSTILE_SITE_KEY

@@ -11,7 +11,10 @@
 		"check": "astro build && tsc --noEmit && WRANGLER_LOG_PATH=.wrangler/logs wrangler deploy --dry-run",
 		"deploy": "wrangler deploy",
 		"dev": "astro dev",
-		"preview": "astro build && WRANGLER_LOG_PATH=.wrangler/logs wrangler dev"
+		"preview": "astro build && WRANGLER_LOG_PATH=.wrangler/logs wrangler dev --host 127.0.0.1 --port 8787",
+		"preview:worker": "WRANGLER_LOG_PATH=.wrangler/logs wrangler dev --host 127.0.0.1 --port 8787",
+		"preview:fallback": "astro build && WRANGLER_LOG_PATH=.wrangler/logs wrangler dev --local-protocol http --host 127.0.0.1 --port 8788",
+		"test": "node --test tests/*.test.mjs"
 	},
 	"dependencies": {
 		"@astrojs/sitemap": "^3.7.3",
@@ -23,7 +26,7 @@
 		"@tailwindcss/vite": "^4.3.0",
 		"tailwindcss": "^4.3.0",
 		"typescript": "^6.0.3",
-		"wrangler": "^4.95.0"
+		"wrangler": "4.95.0"
 	},
 	"engines": {
 		"node": ">=22.12.0"

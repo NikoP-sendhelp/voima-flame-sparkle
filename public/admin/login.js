@@ -10,6 +10,8 @@ const setupMessages = {
   invalid_password_record:
     "ADMIN_PASSWORD_RECORD on virheellisessä muodossa. Luo uusi arvo ja liitä se ilman lainausmerkkejä.",
   locked_try_later: "Liian monta yritystä. Odota hetki ja yritä uudelleen.",
+  turnstile_verification_failed:
+    "Turvavarmennus epäonnistui. Päivitä sivu ja yritä uudelleen.",
 };
 
 function setStatus(message, kind = "error") {
